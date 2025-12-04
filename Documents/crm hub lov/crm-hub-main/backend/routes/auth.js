@@ -50,23 +50,6 @@ router.post('/signup', [
 
         // Hash password
         const passwordHash = await bcrypt.hash(password, 10);
-
-        // Calculate trial end date (7 days from now)
-        const trialEndsAt = new Date();
-        trialEndsAt.setDate(trialEndsAt.getDate() + 7);
-
-        // Insert new user
-        const [result] = await pool.query(
-            `INSERT INTO users (email, password_hash, full_name, trial_ends_at, subscription_plan, subscription_status) 
-       VALUES (?, ?, ?, ?, 'trial', 'active')`,
-            [email, passwordHash, fullName, trialEndsAt]
-        );
-
-        const userId = result.insertId;
-
-        // Generate tokens
-        const { accessToken, refreshToken } = generateTokens(userId);
-
         // Store refresh token
         const refreshTokenExpiry = new Date();
         refreshTokenExpiry.setDate(refreshTokenExpiry.getDate() + 7);

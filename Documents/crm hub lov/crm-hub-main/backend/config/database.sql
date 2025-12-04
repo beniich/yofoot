@@ -1,7 +1,3 @@
--- Create database
-CREATE DATABASE IF NOT EXISTS crm_hub_auth CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
-USE crm_hub_auth;
 
 -- Table: users
 CREATE TABLE IF NOT EXISTS users (
