@@ -392,11 +392,13 @@ const SaaSProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       if (token) {
         const created = await backendRequest('/navigation', 'POST', newItem);
-        setNavigation(prev => prev.map(p => p.id === tempId ? created : p));
-        localStorage.setItem('saas_navigation', JSON.stringify(navigation));
+        // refresh from server to keep ordering/ids consistent
+        await fetchNavigation();
         return created;
       } else {
-        localStorage.setItem('saas_navigation', JSON.stringify([...navigation, newItem]));
+        const saved = [...navigation, newItem];
+        setNavigation(saved);
+        localStorage.setItem('saas_navigation', JSON.stringify(saved));
         return newItem;
       }
     } catch (e) {
@@ -410,11 +412,12 @@ const SaaSProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       if (token) {
         const updated = await backendRequest(`/navigation/${id}`, 'PUT', patch);
-        setNavigation(prev => prev.map(it => it.id === id ? updated : it));
-        localStorage.setItem('saas_navigation', JSON.stringify(navigation));
+        // refresh from server to get authoritative state
+        await fetchNavigation();
         return updated;
       } else {
         const saved = navigation.map(it => it.id === id ? { ...it, ...patch } : it);
+        setNavigation(saved);
         localStorage.setItem('saas_navigation', JSON.stringify(saved));
         return saved.find((i: any) => i.id === id);
       }
@@ -429,10 +432,12 @@ const SaaSProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       if (token) {
         await backendRequest(`/navigation/${id}`, 'DELETE');
-        localStorage.setItem('saas_navigation', JSON.stringify(navigation));
+        // refresh from server
+        await fetchNavigation();
         return true;
       } else {
         const saved = navigation.filter(it => it.id !== id);
+        setNavigation(saved);
         localStorage.setItem('saas_navigation', JSON.stringify(saved));
         return true;
       }
@@ -442,6 +447,16 @@ const SaaSProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  // refresh navigation whenever token changes (e.g., login/logout)
+  useEffect(() => {
+    if (token) {
+      fetchNavigation();
+    } else {
+      const saved = localStorage.getItem('saas_navigation');
+      if (saved) setNavigation(JSON.parse(saved));
+    }
+  }, [token]);
+
   return (
     <SaaSCtx.Provider value={{ 
       token, 
@@ -449,6 +464,12 @@ const SaaSProvider = ({ children }: { children: React.ReactNode }) => {
       tenant, 
       globalResources, 
       aiInsights, 
+      navigation,
+      fetchNavigation,
+      addNavItem,
+      updateNavItem,
+      removeNavItem,
+      setNavigation,
       login, 
       logout, 
       apiCall, 
