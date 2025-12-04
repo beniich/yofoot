@@ -6,31 +6,18 @@ const { body, validationResult } = require('express-validator');
 const { pool } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 
-// Generate JWT tokens
 const generateTokens = (userId) => {
-    const accessToken = jwt.sign(
-        { userId },
-        process.env.JWT_SECRET,
-        { expiresIn: '24h' }
-    );
-
-    const refreshToken = jwt.sign(
-        { userId },
-        process.env.JWT_SECRET,
-        { expiresIn: '7d' }
-    );
-
+    const accessToken = jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '24h' });
+    const refreshToken = jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
     return { accessToken, refreshToken };
 };
 
-// POST /api/auth/signup - Register new user with 7-day free trial
 router.post('/signup', [
     body('email').isEmail().normalizeEmail(),
     body('password').isLength({ min: 6 }),
     body('fullName').trim().notEmpty()
 ], async (req, res) => {
     try {
-        // Validate input
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
@@ -38,47 +25,37 @@ router.post('/signup', [
 
         const { email, password, fullName } = req.body;
 
-        // Check if user already exists
-        const [existingUsers] = await pool.query(
-            'SELECT id FROM users WHERE email = ?',
-            [email]
-        );
-
+        const [existingUsers] = await pool.query('SELECT id FROM users WHERE email = ?', [email]);
         if (existingUsers.length > 0) {
             return res.status(409).json({ error: 'Email already registered' });
         }
 
-        // Hash password
         const passwordHash = await bcrypt.hash(password, 10);
-        // Store refresh token
+        const trialEndsAt = new Date();
+        trialEndsAt.setDate(trialEndsAt.getDate() + 7);
+
+        const [result] = await pool.query('INSERT INTO users (email, password_hash, full_name, trial_ends_at, subscription_plan, subscription_status) VALUES (?, ?, ?, ?, ?, ?)', [email, passwordHash, fullName, trialEndsAt, 'trial', 'active']);
+
+        const userId = result.insertId;
+        const { accessToken, refreshToken } = generateTokens(userId);
+
         const refreshTokenExpiry = new Date();
         refreshTokenExpiry.setDate(refreshTokenExpiry.getDate() + 7);
 
-        await pool.query(
-            'INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (?, ?, ?)',
-            [userId, refreshToken, refreshTokenExpiry]
-        );
+        await pool.query('INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (?, ?, ?)', [userId, refreshToken, refreshTokenExpiry]);
 
         res.status(201).json({
             message: 'Account created successfully! Your 7-day free trial has started.',
-            user: {
-                id: userId,
-                email,
-                fullName,
-                subscriptionPlan: 'trial',
-                trialEndsAt
-            },
+            user: { id: userId, email, fullName, subscriptionPlan: 'trial', trialEndsAt },
             accessToken,
             refreshToken
         });
-
     } catch (error) {
         console.error('Signup error:', error);
         res.status(500).json({ error: 'Failed to create account' });
     }
 });
 
-// POST /api/auth/login - Login user
 router.post('/login', [
     body('email').isEmail().normalizeEmail(),
     body('password').notEmpty()
@@ -90,38 +67,24 @@ router.post('/login', [
         }
 
         const { email, password } = req.body;
-
-        // Get user from database
-        const [users] = await pool.query(
-            'SELECT * FROM users WHERE email = ?',
-            [email]
-        );
+        const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
 
         if (users.length === 0) {
             return res.status(401).json({ error: 'Invalid email or password' });
         }
 
         const user = users[0];
-
-        // Verify password
         const isValidPassword = await bcrypt.compare(password, user.password_hash);
         if (!isValidPassword) {
             return res.status(401).json({ error: 'Invalid email or password' });
         }
 
-        // Generate tokens
         const { accessToken, refreshToken } = generateTokens(user.id);
-
-        // Store refresh token
         const refreshTokenExpiry = new Date();
         refreshTokenExpiry.setDate(refreshTokenExpiry.getDate() + 7);
 
-        await pool.query(
-            'INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (?, ?, ?)',
-            [user.id, refreshToken, refreshTokenExpiry]
-        );
+        await pool.query('INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (?, ?, ?)', [user.id, refreshToken, refreshTokenExpiry]);
 
-        // Check if trial expired
         const trialExpired = user.subscription_plan === 'trial' && new Date() > new Date(user.trial_ends_at);
 
         res.json({
@@ -138,81 +101,28 @@ router.post('/login', [
             accessToken,
             refreshToken
         });
-
     } catch (error) {
         console.error('Login error:', error);
         res.status(500).json({ error: 'Login failed' });
     }
 });
 
-// POST /api/auth/refresh - Refresh access token
-router.post('/refresh', async (req, res) => {
-    try {
-        const { refreshToken } = req.body;
-
-        if (!refreshToken) {
-            return res.status(401).json({ error: 'Refresh token required' });
-        }
-
-        // Verify refresh token
-        jwt.verify(refreshToken, process.env.JWT_SECRET, async (err, decoded) => {
-            if (err) {
-                return res.status(403).json({ error: 'Invalid refresh token' });
-            }
-
-            // Check if refresh token exists in database
-            const [tokens] = await pool.query(
-                'SELECT * FROM refresh_tokens WHERE token = ? AND user_id = ? AND expires_at > NOW()',
-                [refreshToken, decoded.userId]
-            );
-
-            if (tokens.length === 0) {
-                return res.status(403).json({ error: 'Refresh token expired or invalid' });
-            }
-
-            // Generate new access token
-            const newAccessToken = jwt.sign(
-                { userId: decoded.userId },
-                process.env.JWT_SECRET,
-                { expiresIn: '24h' }
-            );
-
-            res.json({ accessToken: newAccessToken });
-        });
-
-    } catch (error) {
-        console.error('Token refresh error:', error);
-        res.status(500).json({ error: 'Token refresh failed' });
-    }
-});
-
-// POST /api/auth/logout - Logout user
 router.post('/logout', authenticateToken, async (req, res) => {
     try {
         const { refreshToken } = req.body;
-
-        // Delete refresh token from database
         if (refreshToken) {
-            await pool.query(
-                'DELETE FROM refresh_tokens WHERE token = ? AND user_id = ?',
-                [refreshToken, req.user.id]
-            );
+            await pool.query('DELETE FROM refresh_tokens WHERE token = ? AND user_id = ?', [refreshToken, req.user.id]);
         }
-
         res.json({ message: 'Logout successful' });
-
     } catch (error) {
         console.error('Logout error:', error);
         res.status(500).json({ error: 'Logout failed' });
     }
 });
 
-// GET /api/auth/me - Get current user info
 router.get('/me', authenticateToken, async (req, res) => {
     try {
         const user = req.user;
-
-        // Check if trial expired
         const trialExpired = user.subscription_plan === 'trial' && new Date() > new Date(user.trial_ends_at);
 
         res.json({
@@ -226,7 +136,6 @@ router.get('/me', authenticateToken, async (req, res) => {
                 trialExpired
             }
         });
-
     } catch (error) {
         console.error('Get user error:', error);
         res.status(500).json({ error: 'Failed to get user info' });
