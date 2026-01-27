@@ -5,9 +5,7 @@ const Header = () => {
     return (
         <header className="sticky top-0 z-50 flex items-center bg-charcoal/90 backdrop-blur-md p-4 pb-2 justify-between border-b border-white/5">
             <div className="flex size-10 shrink-0 items-center">
-                <div className="gold-gradient flex items-center justify-center rounded-lg size-10 shadow-lg shadow-gold/20">
-                    <span className="material-symbols-outlined text-charcoal font-bold">sports_soccer</span>
-                </div>
+                <img src="/logo.png" alt="FootballHub" className="size-10 object-contain" />
             </div>
 
             <h2 className="font-serif italic text-xl font-semibold leading-tight tracking-tight flex-1 ml-3 gold-text-gradient">
