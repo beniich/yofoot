@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
 import AIAgent from './pages/AIAgent';
 import Chat from './pages/Chat';
@@ -13,23 +13,23 @@ import Auth from './pages/Auth';
 
 function App() {
   return (
-    <Router>
-      <div className="min-h-screen bg-charcoal text-white font-sans selection:bg-gold selection:text-charcoal transition-colors duration-300">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/ai-agent" element={<AIAgent />} />
-          <Route path="/chat" element={<Chat />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/subscription" element={<Subscription />} />
-          <Route path="/stats" element={<Stats />} />
-          <Route path="/betslip" element={<BetSlip />} />
-          <Route path="/bet-confirmation" element={<BetConfirmation />} />
-          <Route path="/standings" element={<Standings />} />
-          <Route path="/auth" element={<Auth />} />
-        </Routes>
-      </div>
-    </Router>
+    <div className="min-h-screen bg-charcoal text-white font-sans selection:bg-gold selection:text-charcoal transition-colors duration-300">
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/ai-agent" element={<AIAgent />} />
+        <Route path="/chat" element={<Chat />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/subscription" element={<Subscription />} />
+        <Route path="/stats" element={<Stats />} />
+        <Route path="/betslip" element={<BetSlip />} />
+        <Route path="/bet-confirmation" element={<BetConfirmation />} />
+        <Route path="/standings" element={<Standings />} />
+        <Route path="/auth" element={<Auth />} />
+      </Routes>
+    </div>
   );
 }
+
+export default App;
 
 export default App;
