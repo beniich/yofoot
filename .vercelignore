@@ -1,0 +1,7 @@
+node_modules
+.git
+server
+ai-service
+*.log
+.env
+.env.local
