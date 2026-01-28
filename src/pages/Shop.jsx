@@ -131,10 +131,10 @@ const Shop = () => {
                 </div>
 
                 {/* Products Grid */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {loading ? (
-                        [...Array(4)].map((_, i) => (
-                            <div key={i} className="aspect-[4/5] rounded-xl bg-white/5 animate-pulse" />
+                        [...Array(8)].map((_, i) => (
+                            <div key={i} className="aspect-[3/4] rounded-xl bg-white/5 animate-pulse" />
                         ))
                     ) : filteredProducts.length > 0 ? (
                         filteredProducts.map((product) => (
@@ -144,7 +144,7 @@ const Shop = () => {
                                 className="group cursor-pointer hover:shadow-2xl hover:shadow-gold/10 transition-all"
                             >
                                 {/* Product Image */}
-                                <div className="relative aspect-[4/5] overflow-hidden bg-surface-dark">
+                                <div className="relative aspect-[3/4] overflow-hidden bg-surface-dark">
                                     <img
                                         src={product.images[0]}
                                         alt={product.name}
@@ -194,7 +194,7 @@ const Shop = () => {
 
                                     {/* Price */}
                                     <div className="flex items-baseline gap-2">
-                                        <p className="text-gold font-bold text-lg">${product.price}</p>
+                                        <p className="text-gold font-bold text-base">${product.price}</p>
                                         {product.comparePrice && (
                                             <p className="text-xs text-white/40 line-through">
                                                 ${product.comparePrice}
