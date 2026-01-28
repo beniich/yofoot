@@ -116,7 +116,7 @@ const Home = () => {
 
                 {/* Quick Actions */}
                 <div className="grid grid-cols-2 gap-3">
-                    <Button variant="primary" onClick={() => navigate('/tickets')}>
+                    <Button variant="primary" onClick={() => navigate('/scanner')}>
                         <span className="material-symbols-outlined">qr_code_scanner</span>
                         Scan Ticket
                     </Button>
@@ -155,6 +155,31 @@ const Home = () => {
                                 </div>
                             </Card>
                         ))}
+                    </div>
+                </section>
+
+                {/* Discover Features */}
+                <section>
+                    <h3 className="text-lg font-bold text-white tracking-tight mb-4">Discover</h3>
+                    <div className="grid grid-cols-3 gap-3">
+                        <button onClick={() => navigate('/ai-agent')} className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-surface-dark border border-white/5 hover:bg-white/5 transition-all">
+                            <div className="w-12 h-12 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-400">
+                                <span className="material-symbols-outlined">smart_toy</span>
+                            </div>
+                            <span className="text-xs font-bold text-white">AI Agent</span>
+                        </button>
+                        <button onClick={() => navigate('/chat')} className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-surface-dark border border-white/5 hover:bg-white/5 transition-all">
+                            <div className="w-12 h-12 rounded-full bg-pink-500/10 flex items-center justify-center text-pink-400">
+                                <span className="material-symbols-outlined">forum</span>
+                            </div>
+                            <span className="text-xs font-bold text-white">Community</span>
+                        </button>
+                        <button onClick={() => navigate('/betslip')} className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-surface-dark border border-white/5 hover:bg-white/5 transition-all">
+                            <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center text-green-400">
+                                <span className="material-symbols-outlined">sports_soccer</span>
+                            </div>
+                            <span className="text-xs font-bold text-white">Betting</span>
+                        </button>
                     </div>
                 </section>
 
