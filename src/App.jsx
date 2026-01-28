@@ -10,6 +10,11 @@ import BetSlip from './pages/BetSlip';
 import BetConfirmation from './pages/BetConfirmation';
 import Standings from './pages/Standings';
 import Auth from './pages/Auth';
+import Members from './pages/Members';
+import Events from './pages/Events';
+import Tickets from './pages/Tickets';
+import Shop from './pages/Shop';
+import TicketScanner from './pages/TicketScanner';
 
 function App() {
   return (
@@ -18,6 +23,11 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/ai-agent" element={<AIAgent />} />
         <Route path="/chat" element={<Chat />} />
+        <Route path="/events" element={<Events />} />
+        <Route path="/tickets" element={<Tickets />} />
+        <Route path="/shop" element={<Shop />} />
+        <Route path="/scanner" element={<TicketScanner />} />
+        <Route path="/members" element={<Members />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/subscription" element={<Subscription />} />
         <Route path="/stats" element={<Stats />} />

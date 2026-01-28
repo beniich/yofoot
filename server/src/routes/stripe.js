@@ -1,7 +1,7 @@
 import express from "express"
 import Stripe from "stripe"
 import User from "../models/User.js"
-import auth from "../middleware/auth.js"
+import { protect } from "../middleware/auth.js"
 
 const router = express.Router()
 
@@ -21,7 +21,7 @@ const PLANS = {
 }
 
 // Create Checkout Session
-router.post("/checkout", auth, async (req, res) => {
+router.post("/checkout", protect, async (req, res) => {
     try {
         const { planId } = req.body
         const user = req.user

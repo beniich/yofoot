@@ -7,8 +7,9 @@ const BottomNavigation = () => {
 
     const navItems = [
         { label: 'Home', icon: 'home', path: '/' },
-        { label: 'Stats', icon: 'leaderboard', path: '/stats' },
-        { label: 'Chat', icon: 'forum', path: '/chat' },
+        { label: 'Events', icon: 'calendar_month', path: '/events' },
+        { label: 'Tickets', icon: 'confirmation_number', path: '/tickets' },
+        { label: 'Shop', icon: 'shopping_bag', path: '/shop' },
         { label: 'Profile', icon: 'person', path: '/profile' },
     ];
 
@@ -21,13 +22,13 @@ const BottomNavigation = () => {
                         <button
                             key={item.label}
                             onClick={() => navigate(item.path)}
-                            className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-colors ${isActive ? 'text-gold' : 'text-white/40 hover:text-white/60'
+                            className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-all ${isActive ? 'text-gold scale-105' : 'text-white/40 hover:text-white/60'
                                 }`}
                         >
                             <span className={`material-symbols-outlined transition-all ${isActive ? 'material-symbols-filled scale-110' : ''}`}>
                                 {item.icon}
                             </span>
-                            <span className="text-[10px] font-medium tracking-wide">
+                            <span className={`text-[10px] font-medium tracking-wide ${isActive ? 'font-bold' : ''}`}>
                                 {item.label}
                             </span>
                             {isActive && (

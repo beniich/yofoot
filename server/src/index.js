@@ -1,52 +1,120 @@
-import express from "express"
-import cors from "cors"
-import dotenv from "dotenv"
-import mongoose from "mongoose"
-import { createServer } from "http"
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import dotenv from 'dotenv';
+import { createServer } from 'http';
+import { connectDB } from './config/database.js';
+import { initializeSocket } from './socket.js';
+import { apiLimiter } from './middleware/rateLimiter.js';
+import { errorHandler } from './middleware/errorHandler.js';
 
-import matches from "./routes/matches.js"
-import leagues from "./routes/leagues.js"
-import standings from "./routes/standings.js"
-import auth from "./routes/auth.js"
-import stripeRoutes from "./routes/stripe.js"
-import { initSocket } from "./socket.js"
+// Import routes
+import authRoutes from './routes/auth.js';
+import matchRoutes from './routes/matches.js';
+import leagueRoutes from './routes/leagues.js';
+import stripeRoutes from './routes/stripe.js';
+import aiRoutes from './routes/ai.js';
+import userRoutes from './routes/users.js';
+import memberRoutes from './routes/members.js';
+import eventRoutes from './routes/events.js';
+import ticketRoutes from './routes/tickets.js';
+import productRoutes from './routes/products.js';
+import orderRoutes from './routes/orders.js';
 
-dotenv.config()
+// Load environment variables
+dotenv.config();
 
-const app = express()
-const server = createServer(app)
-const io = initSocket(server)
+const app = express();
+const server = createServer(app);
+const PORT = process.env.PORT || 5000;
 
-// Make io available in routes
-app.use((req, res, next) => {
-    req.io = io
-    next()
-})
+// Security middleware
+app.use(helmet());
 
-app.use(cors())
+// CORS configuration
+app.use(cors({
+  origin: process.env.CLIENT_URL,
+  credentials: true
+}));
 
-// IMPORTANT: Stripe webhook needs raw body, usually handled before express.json() for that specific route
-// But for simplicity in this setup, we'll keep express.json() global and note that production Webhook handling 
-// often requires careful body parsing middleware ordering. 
-// For now, our /api/stripe/webhook expects parsed JSON or needs specific setup.
-// To keep it simple for now, we assume standard JSON flow for checkout creation.
-app.use(express.json())
+// Body parser
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Routes
-app.use("/api/auth", auth)
-app.use("/api/matches", matches)
-app.use("/api/leagues", leagues)
-app.use("/api/standings", standings)
-app.use("/api/stripe", stripeRoutes)
+// Rate limiting
+app.use('/api/', apiLimiter);
 
-// MongoDB Connection
-const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/footballhub"
-mongoose.connect(MONGO_URI)
-    .then(() => console.log("✅ MongoDB Connected"))
-    .catch(err => console.error("❌ MongoDB Connection Error:", err.message))
+// Health check
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'OK',
+    timestamp: new Date(),
+    uptime: process.uptime()
+  });
+});
 
-const PORT = process.env.PORT || 5000
+// API Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/matches', matchRoutes);
+app.use('/api/leagues', leagueRoutes);
+app.use('/api/stripe', stripeRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/members', memberRoutes);
+app.use('/api/events', eventRoutes);
+app.use('/api/tickets', ticketRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/orders', orderRoutes);
 
+// Initialize Socket.io
+const io = initializeSocket(server);
+app.set('io', io);
+
+// Error handling middleware (must be last)
+app.use(errorHandler);
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({
+    message: 'Route not found',
+    path: req.originalUrl
+  });
+});
+
+// Connect to database
+connectDB();
+
+// Start server
 server.listen(PORT, () => {
-    console.log("Backend running on port " + PORT)
-})
+  console.log(`
+╔═══════════════════════════════════════╗
+║  🚀 FootballHub Server Running        ║
+║  📡 Port: ${PORT}                        ║
+║  🌍 Environment: ${process.env.NODE_ENV}     ║
+║  ⚡ Socket.io: Enabled                 ║
+╚═══════════════════════════════════════╝
+  `);
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (err) => {
+  console.error('❌ Unhandled Rejection:', err);
+  server.close(() => process.exit(1));
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (err) => {
+  console.error('❌ Uncaught Exception:', err);
+  process.exit(1);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('👋 SIGTERM received, shutting down gracefully');
+  server.close(() => {
+    console.log('✅ Server closed');
+    process.exit(0);
+  });
+});
+
+export default app;

@@ -1,30 +1,90 @@
-version: "3.8"
+version: '3.8'
 
 services:
-  api:
-    build: ./server
-    ports:
-      - "5000:5000"
-    env_file:
-      - ./server/.env
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: footballhub-postgres
     environment:
-      - MONGO_URI=mongodb://mongo:27017/footballhub
-      - REDIS_URL=redis://redis:6379
-    depends_on:
-      - mongo
-      - redis
-
-  mongo:
-    image: mongo
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: footballhub
     ports:
-      - "27017:27017"
+      - "5432:5432"
     volumes:
-      - mongo_data:/data/db
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - footballhub-network
 
+  # Redis Cache
   redis:
-    image: redis
+    image: redis:7-alpine
+    container_name: footballhub-redis
     ports:
       - "6379:6379"
+    networks:
+      - footballhub-network
+
+  # RabbitMQ Message Queue
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: footballhub-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - footballhub-network
+
+  # Backend API Gateway
+  api-gateway:
+    build:
+      context: ./footballhub-backend
+      dockerfile: Dockerfile.dev
+    container_name: footballhub-api
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/footballhub?schema=public
+      REDIS_HOST: redis
+      RABBITMQ_URL: amqp://admin:admin@rabbitmq:5672
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./footballhub-backend:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+    networks:
+      - footballhub-network
+    command: npm run start:dev
+
+  # Frontend Next.js
+  frontend:
+    build:
+      context: ./footballhub-frontend
+      dockerfile: Dockerfile.dev
+    container_name: footballhub-frontend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./footballhub-frontend:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      - api-gateway
+    networks:
+      - footballhub-network
+    command: npm run dev
 
 volumes:
-  mongo_data:
+  postgres_data:
+
+networks:
+  footballhub-network:
+    driver: bridge

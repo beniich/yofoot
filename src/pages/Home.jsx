@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Header from '../components/Header';
+import BottomNavigation from '../components/BottomNavigation';
+import { Card, Badge, Button } from '../components/UI';
 import { getLive } from '../services/football';
 
 const MOCK_LIVE_MATCHES = [
@@ -11,15 +14,6 @@ const MOCK_LIVE_MATCHES = [
             away: { name: "Man City", code: "MCI", logo: "https://lh3.googleusercontent.com/aida-public/AB6AXuDiU5hm1c5TTXkH2tqN6thb4OBHlWizhhaGtuV709Q_lrliDBmn9j6yNi8Esi0XFlD0jjXfQ6bzB_O91y1X71ntXWgguIbHvX6thjdEhoFR4giHGvPZprVhj8H3fkUq-_Rr5iyglo3AcDsQmhMhwiY-7YkhCY0K5sdz3Nl6IfR1lbtNiMEZp7DM3dpZnmiFi7qf3h0pwTmPCYqImrQSv6FO55_9PTgHVBlRWFcztG37HgXCpfAsfvFCevHKFf5fTQZeoGVmGlA0lyw" }
         },
         goals: { home: 2, away: 1 }
-    },
-    {
-        fixture: { id: 2, status: { elapsed: 12 } },
-        league: { name: "La Liga" },
-        teams: {
-            home: { name: "Real Madrid", code: "RMA", logo: "https://lh3.googleusercontent.com/aida-public/AB6AXuCV5YRnMuutW37J5F5hsDoh7GD7jKor2w6YM8Ta1-1Jw0528_uIi6YCVsETskP2iVvOFv85Vt6X92IkOD2II1M32Spm1zLltxpZwGeU5EDmdIfKxY30WeeEZ822-GswTw0I6f_Dv-9PP6NDkBnKYU9mu93ds-xGW40r1Lo5FdJqP-7dlzNsAwrg2YJqEPoPpBm30aZNMOWdq9jydOupWr0LgpUQ9PGll-CmuxzgFJstLPsRQTNlFdM0vMugcBXMc2eqQORBBWL_wvc" },
-            away: { name: "Barcelona", code: "BAR", logo: "https://lh3.googleusercontent.com/aida-public/AB6AXuBRmFXJ6KjZUwYA6EnNZHi1kXDhyE1lTNxTGMKL06efjKb14gxT5nKA4EJ3jFivm6RkQuWn1kDS2_9eF98Jy1aj79mHK2qzk4ZvBuQk-UxAjfsYwAufepdx1KOFnlFxFZaH08UUmmz2WBgYpHHc-XIW2EwTq6mHbc0CkaOGB_obm9BlVW32VDYa36ebpmstjqUFZP62kmfKIqpoKsvfeYR2p1GzNUH9cPp-gzkYfxaM5vBiqwbpAU64YS_fH0LwRqmEbww-1i7NG6Q" }
-        },
-        goals: { home: 0, away: 0 }
     }
 ];
 
@@ -32,7 +26,6 @@ const Home = () => {
         const fetchMatches = async () => {
             try {
                 const data = await getLive();
-                console.log("Live matches data:", data);
                 if (data && data.length > 0) {
                     setLiveMatches(data);
                 } else {
@@ -52,154 +45,144 @@ const Home = () => {
     const matchesToDisplay = liveMatches.length > 0 ? liveMatches : MOCK_LIVE_MATCHES;
 
     return (
-        <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden bg-charcoal text-white transition-colors duration-300 font-sans">
-            <header className="sticky top-0 z-50 flex items-center bg-charcoal/90 backdrop-blur-md p-4 pb-2 justify-between border-b border-white/5">
-                <div className="flex size-10 shrink-0 items-center">
-                    <div className="gold-gradient flex items-center justify-center rounded-lg size-10 shadow-lg shadow-gold/20">
-                        <span className="material-symbols-outlined !text-charcoal font-bold">sports_soccer</span>
+        <div className="min-h-screen bg-charcoal text-white pb-20 font-sans">
+            <Header />
+
+            <main className="px-4 pt-6 flex flex-col gap-6">
+                {/* Welcome Section */}
+                <div className="flex flex-col gap-1">
+                    <h2 className="text-2xl font-bold text-white font-display">Dashboard</h2>
+                    <p className="text-white/60 text-sm">Here's what's happening at your club.</p>
+                </div>
+
+                {/* Analytics Cards */}
+                <div className="grid grid-cols-1 gap-4">
+                    {/* Total Members */}
+                    <Card variant="glass" className="p-5">
+                        <div className="flex justify-between items-start mb-4">
+                            <div className="flex flex-col gap-1">
+                                <p className="text-white/40 text-xs font-semibold uppercase tracking-wider">Total Members</p>
+                                <h3 className="text-3xl font-bold text-white font-display">1,245</h3>
+                            </div>
+                            <Badge variant="success">
+                                <span className="material-symbols-outlined text-sm">trending_up</span>
+                                +12%
+                            </Badge>
+                        </div>
+                        {/* Mini Chart Visualization */}
+                        <div className="h-16 w-full bg-gradient-to-t from-gold/10 to-transparent rounded-lg border-b border-gold/30 relative overflow-hidden">
+                            <div className="absolute bottom-0 left-0 right-0 h-full flex items-end justify-between px-2 pb-0">
+                                {[40, 60, 45, 70, 65, 80, 75].map((h, i) => (
+                                    <div key={i} style={{ height: `${h}%` }} className="w-1.5 bg-gold/50 rounded-t-sm" />
+                                ))}
+                            </div>
+                        </div>
+                    </Card>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        {/* Revenue */}
+                        <Card variant="glass" className="p-4">
+                            <div className="flex flex-col gap-2">
+                                <div className="flex justify-between items-start">
+                                    <div className="p-2 rounded-lg bg-green-500/10 text-green-400">
+                                        <span className="material-symbols-outlined">payments</span>
+                                    </div>
+                                    <Badge variant="success" className="text-[10px]">+8.5%</Badge>
+                                </div>
+                                <div>
+                                    <h3 className="text-2xl font-bold text-white font-display">$14.5k</h3>
+                                    <p className="text-white/40 text-[10px] font-semibold uppercase tracking-wider">Revenue</p>
+                                </div>
+                            </div>
+                        </Card>
+
+                        {/* Active Events */}
+                        <Card variant="glass" className="p-4">
+                            <div className="flex flex-col gap-2">
+                                <div className="flex justify-between items-start">
+                                    <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400">
+                                        <span className="material-symbols-outlined">event</span>
+                                    </div>
+                                    <Badge variant="info" className="text-[10px]">New</Badge>
+                                </div>
+                                <div>
+                                    <h3 className="text-2xl font-bold text-white font-display">3</h3>
+                                    <p className="text-white/40 text-[10px] font-semibold uppercase tracking-wider">Active Events</p>
+                                </div>
+                            </div>
+                        </Card>
                     </div>
                 </div>
-                <h2 className="font-serif italic text-xl font-semibold leading-tight tracking-tight flex-1 ml-3 gold-text-gradient">FootballHub</h2>
-                <div className="flex items-center gap-2">
-                    <button className="relative flex size-10 items-center justify-center rounded-full bg-white/5 text-gold transition-all hover:bg-white/10">
-                        <span className="material-symbols-outlined">notifications</span>
-                        <span className="absolute top-2.5 right-2.5 flex h-2 w-2 rounded-full bg-gold-light border border-charcoal"></span>
-                    </button>
-                </div>
-            </header>
 
-            <div className="px-4 pt-4">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold/10 border border-gold/30">
-                    <span className="size-1.5 rounded-full bg-gold-light animate-pulse shadow-[0_0_8px_rgba(249,226,126,0.6)]"></span>
-                    <span className="text-gold-light text-[10px] font-semibold uppercase tracking-[0.1em]">Free Plan</span>
+                {/* Quick Actions */}
+                <div className="grid grid-cols-2 gap-3">
+                    <Button variant="primary" onClick={() => navigate('/tickets')}>
+                        <span className="material-symbols-outlined">qr_code_scanner</span>
+                        Scan Ticket
+                    </Button>
+                    <Button variant="secondary" onClick={() => navigate('/events')}>
+                        <span className="material-symbols-outlined">add</span>
+                        New Event
+                    </Button>
                 </div>
-            </div>
 
-            <nav className="mt-4 px-4">
-                <div className="flex border-b border-white/10 justify-between items-end">
-                    <button className="flex flex-col items-center justify-center border-b-[2px] border-gold text-gold gap-1 pb-3 pt-2.5 flex-1">
-                        <span className="material-symbols-outlined material-symbols-filled">stadium</span>
-                        <p className="text-[10px] font-semibold uppercase tracking-wider">Matches</p>
-                    </button>
-                    <button onClick={() => navigate('/ai-agent')} className="flex flex-col items-center justify-center border-b-[2px] border-transparent text-white/40 gap-1 pb-3 pt-2.5 flex-1">
-                        <span className="material-symbols-outlined opacity-60">psychology</span>
-                        <p className="text-[10px] font-semibold uppercase tracking-wider">AI Agent</p>
-                    </button>
-                    <button onClick={() => navigate('/chat')} className="flex flex-col items-center justify-center border-b-[2px] border-transparent text-white/40 gap-1 pb-3 pt-2.5 flex-1">
-                        <span className="material-symbols-outlined opacity-60">forum</span>
-                        <p className="text-[10px] font-semibold uppercase tracking-wider">Rooms</p>
-                    </button>
-                    <button onClick={() => navigate('/subscription')} className="flex flex-col items-center justify-center border-b-[2px] border-transparent text-white/40 gap-1 pb-3 pt-2.5 flex-1">
-                        <span className="material-symbols-outlined opacity-60">workspace_premium</span>
-                        <p className="text-[10px] font-semibold uppercase tracking-wider">Premium</p>
-                    </button>
-                </div>
-            </nav>
+                {/* Live Match Section */}
+                <section>
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-bold text-white tracking-tight">Live Matches</h3>
+                        <button onClick={() => navigate('/standings')} className="text-gold text-xs font-bold hover:text-gold-light transition-colors">View All</button>
+                    </div>
 
-            <section className="mt-8">
-                <div className="flex items-center justify-between px-4 mb-5">
-                    <h3 className="font-serif text-xl font-semibold leading-tight flex items-center gap-3">
-                        Live Matches
-                        <span className="flex h-1.5 w-1.5 rounded-full bg-gold shadow-[0_0_8px_#D4AF37]"></span>
-                    </h3>
-                    <button onClick={() => navigate('/standings')} className="text-gold-light text-[11px] font-semibold uppercase tracking-widest border-b border-gold-light/30">Standings</button>
-                </div>
-                <div className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar pb-4 gap-4 px-4">
-                    {loading ? (
-                        [...Array(2)].map((_, i) => (
-                            <div key={i} className="snap-center min-w-[300px] h-32 rounded-xl bg-white/5 animate-pulse border border-white/5 shrink-0"></div>
-                        ))
-                    ) : (
-                        matchesToDisplay.map((match, index) => (
-                            <div key={match.fixture.id || index} className="snap-center flex flex-col gap-4 p-5 rounded-xl charcoal-gradient border border-white/10 min-w-[300px] shadow-2xl shrink-0 cursor-pointer hover:border-gold/20 transition-colors" onClick={() => navigate('/stats')}>
-                                <div className="flex justify-between items-center mb-1">
-                                    <span className="text-[10px] font-semibold text-white/40 uppercase tracking-widest truncate max-w-[150px]">{match.league.name}</span>
-                                    <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-gold/10 border border-gold/40">
-                                        <span className="text-[10px] font-bold text-gold-light uppercase tracking-tighter italic whitespace-nowrap">{match.fixture.status.elapsed}'</span>
-                                    </div>
+                    <div className="flex flex-col gap-4">
+                        {matchesToDisplay.map((match, index) => (
+                            <Card key={match.fixture.id || index} variant="elevated" className="p-0 overflow-hidden cursor-pointer" onClick={() => navigate('/stats')}>
+                                <div className="bg-white/5 px-4 py-2 flex justify-between items-center border-b border-white/5">
+                                    <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">{match.league.name}</span>
+                                    <Badge variant="danger" className="animate-pulse">LIVE • {match.fixture.status.elapsed}'</Badge>
                                 </div>
-                                <div className="flex items-center justify-between gap-4">
-                                    <div className="flex flex-col items-center gap-3 flex-1 min-w-0">
-                                        <div className="size-14 rounded-full bg-white/5 flex items-center justify-center p-2.5 border border-white/5">
-                                            <img alt={match.teams.home.name} className="size-full object-contain filter grayscale brightness-125" src={match.teams.home.logo} />
-                                        </div>
-                                        <p className="text-xs font-semibold tracking-widest text-white/80 truncate w-full text-center">{match.teams.home.code || match.teams.home.name.substring(0, 3).toUpperCase()}</p>
+                                <div className="p-5 flex items-center justify-between">
+                                    <div className="flex flex-col items-center gap-2 flex-1">
+                                        <img src={match.teams.home.logo} alt={match.teams.home.name} className="w-12 h-12 object-contain" />
+                                        <span className="text-xs font-bold text-white/80">{match.teams.home.code}</span>
                                     </div>
                                     <div className="flex flex-col items-center">
-                                        <p className="text-3xl font-serif font-bold text-white tracking-widest whitespace-nowrap">
-                                            {match.goals.home ?? 0} - {match.goals.away ?? 0}
-                                        </p>
+                                        <span className="text-3xl font-display font-bold text-white">{match.goals.home} - {match.goals.away}</span>
                                     </div>
-                                    <div className="flex flex-col items-center gap-3 flex-1 min-w-0">
-                                        <div className="size-14 rounded-full bg-white/5 flex items-center justify-center p-2.5 border border-white/5">
-                                            <img alt={match.teams.away.name} className="size-full object-contain filter grayscale brightness-125" src={match.teams.away.logo} />
-                                        </div>
-                                        <p className="text-xs font-semibold tracking-widest text-white/80 truncate w-full text-center">{match.teams.away.code || match.teams.away.name.substring(0, 3).toUpperCase()}</p>
+                                    <div className="flex flex-col items-center gap-2 flex-1">
+                                        <img src={match.teams.away.logo} alt={match.teams.away.name} className="w-12 h-12 object-contain" />
+                                        <span className="text-xs font-bold text-white/80">{match.teams.away.code}</span>
                                     </div>
                                 </div>
-                            </div>
-                        ))
-                    )}
-                </div>
-            </section>
-
-            <section className="mt-6 px-4 pb-20">
-                <h3 className="font-serif text-xl font-semibold leading-tight mb-5">Top AI Prediction</h3>
-                <div onClick={() => navigate('/ai-agent')} className="relative overflow-hidden rounded-xl bg-gradient-to-br from-gold/20 via-charcoal to-charcoal p-[1px] shadow-2xl cursor-pointer hover:border-gold/30 transition-all">
-                    <div className="bg-slate-dark/40 backdrop-blur-md rounded-[11px] p-5 flex flex-col gap-5 border border-white/5">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 bg-gold/10 px-3 py-1 rounded-full border border-gold/20">
-                                <span className="material-symbols-outlined !text-gold-light text-sm">bolt</span>
-                                <span className="text-gold-light text-[10px] font-bold uppercase tracking-widest">High Confidence</span>
-                            </div>
-                            <span className="text-white/30 text-[10px] font-medium tracking-wide">Updated 5m ago</span>
-                        </div>
-                        <div className="flex items-center gap-5">
-                            <div className="flex-1">
-                                <p className="text-white/40 text-[10px] font-semibold uppercase tracking-[0.15em] mb-1">Recommended Bet</p>
-                                <p className="text-lg font-serif font-semibold leading-tight text-white mb-1.5">Inter Milan vs AC Milan</p>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-gold font-bold text-sm">Inter to Win & Over 2.5</span>
-                                </div>
-                            </div>
-                            <div className="flex flex-col items-center justify-center size-20 rounded-full border border-gold/30 bg-gold/5 shadow-[0_0_15px_rgba(212,175,55,0.1)]">
-                                <p className="text-gold-light text-2xl font-serif font-bold">84%</p>
-                                <p className="text-[8px] font-bold text-gold/60 uppercase tracking-widest">Prob.</p>
-                            </div>
-                        </div>
-                        <div className="flex gap-3">
-                            <button onClick={(e) => { e.stopPropagation(); navigate('/stats'); }} className="flex-1 gold-gradient text-charcoal font-bold py-3.5 rounded-lg text-xs uppercase tracking-[0.1em] shadow-lg shadow-gold/20 transition-transform active:scale-95">
-                                View Full Analysis
-                            </button>
-                            <button className="flex items-center justify-center aspect-square bg-white/5 border border-white/10 rounded-lg px-4 hover:bg-white/10 transition-colors">
-                                <span className="material-symbols-outlined !text-gold">share</span>
-                            </button>
-                        </div>
+                            </Card>
+                        ))}
                     </div>
-                    <div className="absolute -right-12 -bottom-12 size-40 bg-gold/5 rounded-full blur-3xl pointer-events-none"></div>
-                </div>
-            </section>
+                </section>
 
-            <div className="fixed bottom-0 left-0 right-0 z-50 bg-charcoal/95 backdrop-blur-xl border-t border-white/5 px-6 py-4 pb-8">
-                <div className="flex items-center justify-between max-w-md mx-auto">
-                    <button className="flex flex-col items-center gap-1.5 text-gold">
-                        <span className="material-symbols-outlined material-symbols-filled">grid_view</span>
-                        <span className="text-[10px] font-semibold uppercase tracking-widest">Home</span>
-                    </button>
-                    <button onClick={() => navigate('/standings')} className="flex flex-col items-center gap-1.5 text-white/40">
-                        <span className="material-symbols-outlined !text-white/40">leaderboard</span>
-                        <span className="text-[10px] font-semibold uppercase tracking-widest">Table</span>
-                    </button>
-                    <button onClick={() => navigate('/chat')} className="flex flex-col items-center gap-1.5 text-white/40">
-                        <span className="material-symbols-outlined !text-white/40">groups</span>
-                        <span className="text-[10px] font-semibold uppercase tracking-widest">Chat</span>
-                    </button>
-                    <button onClick={() => navigate('/profile')} className="flex flex-col items-center gap-1.5 text-white/40">
-                        <span className="material-symbols-outlined !text-white/40">person</span>
-                        <span className="text-[10px] font-semibold uppercase tracking-widest">Profile</span>
-                    </button>
-                </div>
-            </div>
+                {/* Recent Activity */}
+                <section>
+                    <h3 className="text-lg font-bold text-white tracking-tight mb-4">Recent Activity</h3>
+                    <Card variant="glass" className="divide-y divide-white/5">
+                        {[
+                            { icon: 'person_add', color: 'text-blue-400 bg-blue-400/10', title: 'New Member', desc: 'Sarah Jenkins joined', time: '2m' },
+                            { icon: 'qr_code', color: 'text-gold bg-gold/10', title: 'Ticket Validated', desc: 'Gate A - Section 104', time: '14m' },
+                            { icon: 'shopping_bag', color: 'text-green-400 bg-green-400/10', title: 'New Order', desc: '#ORD-9921 ($85.00)', time: '1h' },
+                        ].map((item, i) => (
+                            <div key={i} className="flex items-center gap-4 p-4 hover:bg-white/5 transition-colors">
+                                <div className={`flex h-10 w-10 items-center justify-center rounded-full ${item.color}`}>
+                                    <span className="material-symbols-outlined text-xl">{item.icon}</span>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-bold text-white truncate">{item.title}</p>
+                                    <p className="text-xs text-white/40 truncate">{item.desc}</p>
+                                </div>
+                                <span className="text-xs font-medium text-white/30">{item.time}</span>
+                            </div>
+                        ))}
+                    </Card>
+                </section>
+            </main>
+
+            <BottomNavigation />
         </div>
     );
 };

@@ -1,0 +1,375 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== USERS & AUTH ====================
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String
+  firstName     String?
+  lastName      String?
+  phone         String?
+  avatar        String?
+  role          UserRole  @default(FAN)
+  isVerified    Boolean   @default(false)
+  isActive      Boolean   @default(true)
+  
+  // Relations
+  tickets       Ticket[]
+  orders        Order[]
+  clubMemberships ClubMember[]
+  notifications Notification[]
+  badges        Badge[]
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@index([email])
+  @@map("users")
+}
+
+enum UserRole {
+  FAN
+  CLUB_ADMIN
+  CLUB_MEMBER
+  ORGANIZER
+  SUPER_ADMIN
+}
+
+// ==================== CLUBS ====================
+
+model Club {
+  id              String    @id @default(uuid())
+  name            String
+  slug            String    @unique
+  description     String?
+  logo            String?
+  coverImage      String?
+  email           String
+  phone           String?
+  website         String?
+  address         String?
+  city            String?
+  country         String?
+  
+  // Subscription
+  subscriptionPlan SubscriptionPlan @default(BASIC)
+  subscriptionStatus String @default("active")
+  subscriptionEndsAt DateTime?
+  
+  // Relations
+  members         ClubMember[]
+  events          Event[]
+  products        Product[]
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@index([slug])
+  @@map("clubs")
+}
+
+enum SubscriptionPlan {
+  BASIC
+  PRO
+  ELITE
+}
+
+model ClubMember {
+  id          String    @id @default(uuid())
+  userId      String
+  clubId      String
+  role        ClubRole  @default(MEMBER)
+  isActive    Boolean   @default(true)
+  
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  club        Club      @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  
+  joinedAt    DateTime  @default(now())
+  
+  @@unique([userId, clubId])
+  @@map("club_members")
+}
+
+enum ClubRole {
+  ADMIN
+  MODERATOR
+  MEMBER
+}
+
+// ==================== EVENTS ====================
+
+model Event {
+  id            String    @id @default(uuid())
+  clubId        String
+  title         String
+  description   String?
+  coverImage    String?
+  venue         String
+  address       String?
+  city          String
+  country       String
+  startDate     DateTime
+  endDate       DateTime?
+  category      EventCategory
+  status        EventStatus @default(DRAFT)
+  maxAttendees  Int?
+  isPublic      Boolean   @default(true)
+  
+  // Relations
+  club          Club      @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  tickets       Ticket[]
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@index([clubId])
+  @@index([startDate])
+  @@map("events")
+}
+
+enum EventCategory {
+  MATCH
+  TOURNAMENT
+  TRAINING
+  MEETING
+  OTHER
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
+// ==================== TICKETS ====================
+
+model Ticket {
+  id            String    @id @default(uuid())
+  eventId       String
+  userId        String?
+  ticketNumber  String    @unique
+  qrCode        String    @unique
+  ticketType    TicketType
+  price         Float
+  currency      String    @default("USD")
+  status        TicketStatus @default(VALID)
+  
+  // Validation
+  isValidated   Boolean   @default(false)
+  validatedAt   DateTime?
+  validatedBy   String?
+  
+  // Relations
+  event         Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user          User?     @relation(fields: [userId], references: [id])
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@index([eventId])
+  @@index([userId])
+  @@index([qrCode])
+  @@map("tickets")
+}
+
+enum TicketType {
+  VIP
+  STANDARD
+  EARLY_BIRD
+  FREE
+}
+
+enum TicketStatus {
+  VALID
+  USED
+  CANCELLED
+  EXPIRED
+}
+
+// ==================== SHOP ====================
+
+model Product {
+  id            String    @id @default(uuid())
+  clubId        String?
+  name          String
+  description   String?
+  images        String[]
+  price         Float
+  comparePrice  Float?
+  currency      String    @default("USD")
+  sku           String?   @unique
+  stock         Int       @default(0)
+  category      ProductCategory
+  isActive      Boolean   @default(true)
+  
+  // Relations
+  club          Club?     @relation(fields: [clubId], references: [id])
+  orderItems    OrderItem[]
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@index([clubId])
+  @@index([category])
+  @@map("products")
+}
+
+enum ProductCategory {
+  TSHIRT
+  JERSEY
+  ACCESSORIES
+  EQUIPMENT
+  OTHER
+}
+
+model Order {
+  id            String    @id @default(uuid())
+  userId        String
+  orderNumber   String    @unique
+  status        OrderStatus @default(PENDING)
+  
+  // Pricing
+  subtotal      Float
+  tax           Float     @default(0)
+  shipping      Float     @default(0)
+  total         Float
+  currency      String    @default("USD")
+  
+  // Shipping
+  shippingAddress Json?
+  trackingNumber  String?
+  
+  // Payment
+  paymentMethod   String?
+  paymentStatus   PaymentStatus @default(PENDING)
+  paidAt          DateTime?
+  
+  // Relations
+  user          User      @relation(fields: [userId], references: [id])
+  items         OrderItem[]
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@index([userId])
+  @@index([orderNumber])
+  @@map("orders")
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+model OrderItem {
+  id          String    @id @default(uuid())
+  orderId     String
+  productId   String
+  quantity    Int
+  price       Float
+  
+  order       Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product     Product   @relation(fields: [productId], references: [id])
+  
+  @@map("order_items")
+}
+
+// ==================== BADGES ====================
+
+model Badge {
+  id          String    @id @default(uuid())
+  userId      String
+  eventId     String?
+  badgeType   BadgeType
+  name        String
+  role        String?
+  qrCode      String    @unique
+  imageUrl    String?
+  isActive    Boolean   @default(true)
+  
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime?
+  
+  @@index([userId])
+  @@map("badges")
+}
+
+enum BadgeType {
+  EVENT
+  MEMBERSHIP
+  ACCESS
+  VIP
+}
+
+// ==================== NOTIFICATIONS ====================
+
+model Notification {
+  id          String    @id @default(uuid())
+  userId      String
+  title       String
+  message     String
+  type        NotificationType
+  data        Json?
+  isRead      Boolean   @default(false)
+  
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime  @default(now())
+  
+  @@index([userId])
+  @@index([isRead])
+  @@map("notifications")
+}
+
+enum NotificationType {
+  EVENT
+  TICKET
+  ORDER
+  CLUB
+  SYSTEM
+}
+
+// ==================== ANALYTICS ====================
+
+model Analytics {
+  id          String    @id @default(uuid())
+  entityType  String    // "event", "ticket", "order", "user"
+  entityId    String
+  metricType  String
+  metricValue Float
+  metadata    Json?
+  
+  createdAt   DateTime  @default(now())
+  
+  @@index([entityType, entityId])
+  @@index([metricType])
+  @@map("analytics")
+}
