@@ -9,7 +9,7 @@ import React from 'react';
  * @param {string} className - Additional CSS classes
  * @param {function} onClick - Click handler
  */
-const Button = ({
+export const Button = ({
     variant = 'primary',
     size = 'md',
     icon,
