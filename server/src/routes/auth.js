@@ -1,11 +1,13 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import Joi from 'joi';
+import { OAuth2Client } from 'google-auth-library';
 import User from '../models/User.js';
 import { protect } from '../middleware/auth.js';
 import { authLimiter } from '../middleware/rateLimiter.js';
 
 const router = express.Router();
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // Validation schemas
 const registerSchema = Joi.object({
@@ -36,24 +38,24 @@ router.post('/register', authLimiter, async (req, res) => {
     // Validate input
     const { error } = registerSchema.validate(req.body);
     if (error) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        message: error.details[0].message 
+        message: error.details[0].message
       });
     }
 
     const { username, email, password } = req.body;
 
     // Check if user exists
-    const userExists = await User.findOne({ 
-      $or: [{ email }, { username }] 
+    const userExists = await User.findOne({
+      $or: [{ email }, { username }]
     });
 
     if (userExists) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        message: userExists.email === email 
-          ? 'Email already registered' 
+        message: userExists.email === email
+          ? 'Email already registered'
           : 'Username already taken'
       });
     }
@@ -80,7 +82,7 @@ router.post('/register', authLimiter, async (req, res) => {
 
   } catch (error) {
     console.error('Registration error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: 'Server error during registration',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -96,9 +98,9 @@ router.post('/login', authLimiter, async (req, res) => {
     // Validate input
     const { error } = loginSchema.validate(req.body);
     if (error) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        message: error.details[0].message 
+        message: error.details[0].message
       });
     }
 
@@ -108,17 +110,17 @@ router.post('/login', authLimiter, async (req, res) => {
     const user = await User.findOne({ email }).select('+password');
 
     if (!user) {
-      return res.status(401).json({ 
+      return res.status(401).json({
         success: false,
-        message: 'Invalid email or password' 
+        message: 'Invalid email or password'
       });
     }
 
     // Check if user is active
     if (!user.isActive) {
-      return res.status(403).json({ 
+      return res.status(403).json({
         success: false,
-        message: 'Your account has been deactivated. Please contact support.' 
+        message: 'Your account has been deactivated. Please contact support.'
       });
     }
 
@@ -126,9 +128,9 @@ router.post('/login', authLimiter, async (req, res) => {
     const isPasswordValid = await user.comparePassword(password);
 
     if (!isPasswordValid) {
-      return res.status(401).json({ 
+      return res.status(401).json({
         success: false,
-        message: 'Invalid email or password' 
+        message: 'Invalid email or password'
       });
     }
 
@@ -150,10 +152,72 @@ router.post('/login', authLimiter, async (req, res) => {
 
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: 'Server error during login',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// @route   POST /api/auth/google
+// @desc    Google login
+// @access  Public
+router.post('/google', async (req, res) => {
+  try {
+    const { credential } = req.body;
+
+    if (!credential) {
+      return res.status(400).json({ success: false, message: 'Google credential is required' });
+    }
+
+    // Verify Google token
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID
+    });
+
+    const payload = ticket.getPayload();
+    const { email, given_name, family_name, picture } = payload;
+
+    // Check if user exists
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      // Create new user (social login)
+      const username = (given_name + (family_name || '') + Math.floor(Math.random() * 1000)).toLowerCase().replace(/\s/g, '');
+
+      user = await User.create({
+        username,
+        email,
+        password: Math.random().toString(36).slice(-10), // Random password for model requirement
+        avatar: picture,
+        isActive: true,
+        emailVerified: true
+      });
+      console.log(`✅ New user registered via Google: ${user.username} (${user.email})`);
+    } else {
+      // Update last login
+      user.lastLogin = new Date();
+      if (!user.avatar && picture) user.avatar = picture;
+      await user.save();
+    }
+
+    // Generate token
+    const token = generateToken(user._id);
+
+    res.json({
+      success: true,
+      message: 'Google login successful',
+      token,
+      user: user.toPublicJSON()
+    });
+
+  } catch (error) {
+    console.error('Google login error:', error);
+    res.status(401).json({
+      success: false,
+      message: 'Invalid Google token or verification failed'
     });
   }
 });
@@ -166,11 +230,11 @@ router.get('/me', protect, async (req, res) => {
     const user = await User.findById(req.user.id)
       .populate('favoriteTeams')
       .populate('favoriteLeagues');
-    
+
     if (!user) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        message: 'User not found' 
+        message: 'User not found'
       });
     }
 
@@ -181,7 +245,7 @@ router.get('/me', protect, async (req, res) => {
 
   } catch (error) {
     console.error('Get profile error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: 'Server error',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -199,9 +263,9 @@ router.put('/update-profile', protect, async (req, res) => {
     const user = await User.findById(req.user.id);
 
     if (!user) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        message: 'User not found' 
+        message: 'User not found'
       });
     }
 
@@ -221,16 +285,16 @@ router.put('/update-profile', protect, async (req, res) => {
 
   } catch (error) {
     console.error('Update profile error:', error);
-    
+
     // Handle duplicate key error
     if (error.code === 11000) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        message: 'Username or email already taken' 
+        message: 'Username or email already taken'
       });
     }
 
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: 'Server error',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -246,16 +310,16 @@ router.put('/change-password', protect, async (req, res) => {
     const { currentPassword, newPassword } = req.body;
 
     if (!currentPassword || !newPassword) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        message: 'Please provide both current and new password' 
+        message: 'Please provide both current and new password'
       });
     }
 
     if (newPassword.length < 6) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        message: 'New password must be at least 6 characters' 
+        message: 'New password must be at least 6 characters'
       });
     }
 
@@ -265,9 +329,9 @@ router.put('/change-password', protect, async (req, res) => {
     const isPasswordValid = await user.comparePassword(currentPassword);
 
     if (!isPasswordValid) {
-      return res.status(401).json({ 
+      return res.status(401).json({
         success: false,
-        message: 'Current password is incorrect' 
+        message: 'Current password is incorrect'
       });
     }
 
@@ -284,7 +348,7 @@ router.put('/change-password', protect, async (req, res) => {
 
   } catch (error) {
     console.error('Change password error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: 'Server error',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -300,9 +364,9 @@ router.delete('/delete-account', protect, async (req, res) => {
     const user = await User.findById(req.user.id);
 
     if (!user) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        message: 'User not found' 
+        message: 'User not found'
       });
     }
 
@@ -319,7 +383,7 @@ router.delete('/delete-account', protect, async (req, res) => {
 
   } catch (error) {
     console.error('Delete account error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: 'Server error',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -335,9 +399,9 @@ router.post('/verify-token', async (req, res) => {
     const { token } = req.body;
 
     if (!token) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        message: 'Token is required' 
+        message: 'Token is required'
       });
     }
 
@@ -345,9 +409,9 @@ router.post('/verify-token', async (req, res) => {
     const user = await User.findById(decoded.id);
 
     if (!user || !user.isActive) {
-      return res.status(401).json({ 
+      return res.status(401).json({
         success: false,
-        message: 'Invalid token' 
+        message: 'Invalid token'
       });
     }
 
@@ -358,10 +422,10 @@ router.post('/verify-token', async (req, res) => {
     });
 
   } catch (error) {
-    res.status(401).json({ 
+    res.status(401).json({
       success: false,
       valid: false,
-      message: 'Invalid or expired token' 
+      message: 'Invalid or expired token'
     });
   }
 });

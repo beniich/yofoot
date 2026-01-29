@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
+import { GoogleLogin } from '@react-oauth/google';
+
 const Auth = () => {
     const [isLogin, setIsLogin] = useState(true);
     const [email, setEmail] = useState('');
@@ -10,7 +12,7 @@ const Auth = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const { login, register } = useAuth();
+    const { login, register, googleLogin } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -30,6 +32,19 @@ const Auth = () => {
             navigate(from, { replace: true });
         } catch (err) {
             setError(err.response?.data?.error || 'Authentication failed. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleGoogleSuccess = async (credentialResponse) => {
+        setLoading(true);
+        setError('');
+        try {
+            await googleLogin(credentialResponse.credential);
+            navigate(from, { replace: true });
+        } catch (err) {
+            setError(err.response?.data?.message || 'Google Login failed');
         } finally {
             setLoading(false);
         }
@@ -133,6 +148,27 @@ const Auth = () => {
                             )}
                         </button>
                     </form>
+
+                    {/* Google Divider */}
+                    <div className="relative my-6 z-10 flex items-center justify-center">
+                        <div className="absolute inset-0 flex items-center">
+                            <div className="w-full border-t border-white/10"></div>
+                        </div>
+                        <div className="relative px-4 bg-[#1a1a1a] text-[10px] text-white/30 uppercase tracking-[0.2em] font-bold">
+                            Or continue with
+                        </div>
+                    </div>
+
+                    <div className="relative z-10 flex justify-center">
+                        <GoogleLogin
+                            onSuccess={handleGoogleSuccess}
+                            onError={() => setError('Google Login Failed')}
+                            theme="dark"
+                            shape="circle"
+                            text="continue_with"
+                            width="100%"
+                        />
+                    </div>
 
                     <div className="mt-6 pt-6 border-t border-white/5 text-center relative z-10">
                         <p className="text-white/40 text-xs">

@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { jwtDecode } from "jwt-decode";
-import { login as apiLogin, register as apiRegister, logout as apiLogout } from '../services/auth';
+import { login as apiLogin, register as apiRegister, logout as apiLogout, googleLogin as apiGoogleLogin } from '../services/auth';
 
 const AuthContext = createContext(null);
 
@@ -62,6 +62,17 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    const googleLogin = async (credential) => {
+        try {
+            const data = await apiGoogleLogin(credential);
+            setUser(data.user);
+            localStorage.setItem('username', data.user.username);
+            return data;
+        } catch (error) {
+            throw error;
+        }
+    };
+
     const logout = () => {
         apiLogout();
         localStorage.removeItem('username');
@@ -69,7 +80,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+        <AuthContext.Provider value={{ user, login, register, googleLogin, logout, loading }}>
             {!loading && children}
         </AuthContext.Provider>
     );
