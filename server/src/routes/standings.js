@@ -1,26 +1,43 @@
-import express from "express"
-import api from "../services/footballApi.js"
+import express from 'express';
+import Standing from '../models/Standing.js';
+import footballApi from '../services/footballApi.js';
 
-const router = express.Router()
+const router = express.Router();
 
-router.get("/:league/:season", async (req, res) => {
+// GET /api/standings/:leagueId/:season
+router.get('/:leagueId/:season', async (req, res) => {
     try {
-        const { league, season } = req.params
+        const { leagueId, season } = req.params;
 
-        const { data } = await api.get(
-            `/standings?league=${league}&season=${season}`
-        )
+        const standing = await Standing.findOne({
+            league: leagueId,
+            season: Number(season),
+        })
+            .populate('league', 'name logo country')
+            .populate('rankings.team', 'name logo');
 
-        if (data.response && data.response.length > 0) {
-            res.json(data.response[0].league.standings[0])
-        } else {
-            res.json([])
+        if (!standing) {
+            return res.status(404).json({ message: 'Standings not found' });
         }
 
+        res.json(standing);
     } catch (error) {
-        console.error("Error fetching standings:", error.message)
-        res.status(500).json({ error: "Standings failed" })
+        res.status(500).json({ message: error.message });
     }
-})
+});
 
-export default router
+// POST /api/standings/sync/:leagueId/:season
+router.post('/sync/:leagueId/:season', async (req, res) => {
+    try {
+        const { leagueId, season } = req.params;
+        const standing = await footballApi.syncStandingsByLeague(
+            Number(leagueId),
+            Number(season)
+        );
+        res.json({ message: 'Standings synced', standing });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+export default router;

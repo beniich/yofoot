@@ -162,6 +162,24 @@ const Home = () => {
                 <section>
                     <h3 className="text-lg font-bold text-white tracking-tight mb-4">Discover</h3>
                     <div className="grid grid-cols-3 gap-3">
+                        <button onClick={() => navigate('/news')} className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-surface-dark border border-white/5 hover:bg-white/5 transition-all">
+                            <div className="w-12 h-12 rounded-full bg-gold/10 flex items-center justify-center text-gold">
+                                <span className="material-symbols-outlined">newspaper</span>
+                            </div>
+                            <span className="text-xs font-bold text-white">News</span>
+                        </button>
+                        <button onClick={() => navigate('/matches')} className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-surface-dark border border-white/5 hover:bg-white/5 transition-all">
+                            <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400">
+                                <span className="material-symbols-outlined">sports_soccer</span>
+                            </div>
+                            <span className="text-xs font-bold text-white">Matches</span>
+                        </button>
+                        <button onClick={() => navigate('/leagues')} className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-surface-dark border border-white/5 hover:bg-white/5 transition-all">
+                            <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center text-green-400">
+                                <span className="material-symbols-outlined">leaderboard</span>
+                            </div>
+                            <span className="text-xs font-bold text-white">Leagues</span>
+                        </button>
                         <button onClick={() => navigate('/ai-agent')} className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-surface-dark border border-white/5 hover:bg-white/5 transition-all">
                             <div className="w-12 h-12 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-400">
                                 <span className="material-symbols-outlined">smart_toy</span>
@@ -174,11 +192,11 @@ const Home = () => {
                             </div>
                             <span className="text-xs font-bold text-white">Community</span>
                         </button>
-                        <button onClick={() => navigate('/betslip')} className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-surface-dark border border-white/5 hover:bg-white/5 transition-all">
-                            <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center text-green-400">
-                                <span className="material-symbols-outlined">sports_soccer</span>
+                        <button onClick={() => navigate('/standings')} className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-surface-dark border border-white/5 hover:bg-white/5 transition-all">
+                            <div className="w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-400">
+                                <span className="material-symbols-outlined">format_list_numbered</span>
                             </div>
-                            <span className="text-xs font-bold text-white">Betting</span>
+                            <span className="text-xs font-bold text-white">Standings</span>
                         </button>
                     </div>
                 </section>

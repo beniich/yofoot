@@ -15,6 +15,9 @@ import Events from './pages/Events';
 import Tickets from './pages/Tickets';
 import Shop from './pages/Shop';
 import TicketScanner from './pages/TicketScanner';
+import News from './pages/News';
+import Leagues from './pages/Leagues';
+import Matches from './pages/Matches';
 
 function App() {
   return (
@@ -34,6 +37,9 @@ function App() {
         <Route path="/betslip" element={<BetSlip />} />
         <Route path="/bet-confirmation" element={<BetConfirmation />} />
         <Route path="/standings" element={<Standings />} />
+        <Route path="/news" element={<News />} />
+        <Route path="/leagues" element={<Leagues />} />
+        <Route path="/matches" element={<Matches />} />
         <Route path="/auth" element={<Auth />} />
       </Routes>
     </div>

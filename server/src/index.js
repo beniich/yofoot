@@ -13,6 +13,10 @@ import orderRoutes from './routes/orders.js';
 import aiRoutes from './routes/ai.js';
 import authRoutes from './routes/auth.js';
 import stripeRoutes from './routes/stripe.js';
+import leagueRoutes from './routes/leagues.js';
+import matchRoutes from './routes/matches.js';
+import newsRoutes from './routes/news.js';
+import standingRoutes from './routes/standings.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -33,6 +37,10 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/stripe', stripeRoutes);
+app.use('/api/leagues', leagueRoutes);
+app.use('/api/matches', matchRoutes);
+app.use('/api/news', newsRoutes);
+app.use('/api/standings', standingRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
