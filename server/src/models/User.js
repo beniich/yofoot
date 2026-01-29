@@ -44,17 +44,43 @@ const userSchema = new mongoose.Schema({
   },
   avatar: {
     type: String,
-    default: function() {
+    default: function () {
       return `https://ui-avatars.com/api/?background=135bec&color=fff&name=${this.username}`;
     }
   },
   favoriteTeams: [{
-    type: Number, // Team ID from API-Football
+    type: mongoose.Schema.Types.ObjectId,
     ref: 'Team'
   }],
   favoriteLeagues: [{
-    type: Number, // League ID from API-Football
+    type: mongoose.Schema.Types.ObjectId,
     ref: 'League'
+  }],
+  favoritePlayers: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Player'
+  }],
+  pushToken: {
+    type: String,
+    default: null
+  },
+  notificationSettings: {
+    matchStart: { type: Boolean, default: true },
+    goals: { type: Boolean, default: true },
+    matchResult: { type: Boolean, default: true },
+    news: { type: Boolean, default: false }
+  },
+  following: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
+  followers: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
+  fantasyTeams: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'FantasyTeam'
   }],
   preferences: {
     notifications: {
@@ -97,7 +123,7 @@ userSchema.index({ plan: 1 });
 userSchema.index({ createdAt: -1 });
 
 // Hash password avant sauvegarde
-userSchema.pre('save', async function(next) {
+userSchema.pre('save', async function (next) {
   // Ne hash que si le password est modifié
   if (!this.isModified('password')) {
     return next();
@@ -113,7 +139,7 @@ userSchema.pre('save', async function(next) {
 });
 
 // Méthode pour comparer les mots de passe
-userSchema.methods.comparePassword = async function(candidatePassword) {
+userSchema.methods.comparePassword = async function (candidatePassword) {
   try {
     return await bcrypt.compare(candidatePassword, this.password);
   } catch (error) {
@@ -122,7 +148,7 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
 };
 
 // Méthode pour obtenir les infos publiques
-userSchema.methods.toPublicJSON = function() {
+userSchema.methods.toPublicJSON = function () {
   return {
     id: this._id,
     username: this.username,
@@ -138,7 +164,7 @@ userSchema.methods.toPublicJSON = function() {
 };
 
 // Méthode pour vérifier si l'utilisateur a accès à une fonctionnalité
-userSchema.methods.hasAccess = function(feature) {
+userSchema.methods.hasAccess = function (feature) {
   const features = {
     free: ['basic_predictions', 'live_scores', 'limited_chat'],
     pro: ['basic_predictions', 'live_scores', 'limited_chat', 'advanced_predictions', 'full_chat', 'analytics'],
@@ -149,7 +175,7 @@ userSchema.methods.hasAccess = function(feature) {
 };
 
 // Méthode pour mettre à jour la précision des prédictions
-userSchema.methods.updatePredictionStats = function(isCorrect) {
+userSchema.methods.updatePredictionStats = function (isCorrect) {
   this.stats.predictionsCount += 1;
   if (isCorrect) {
     this.stats.correctPredictions += 1;
@@ -159,12 +185,12 @@ userSchema.methods.updatePredictionStats = function(isCorrect) {
 };
 
 // Méthode statique pour trouver les utilisateurs premium
-userSchema.statics.findPremiumUsers = function() {
+userSchema.statics.findPremiumUsers = function () {
   return this.find({ plan: { $in: ['pro', 'elite'] }, isActive: true });
 };
 
 // Virtual pour calculer le niveau de l'utilisateur
-userSchema.virtual('level').get(function() {
+userSchema.virtual('level').get(function () {
   if (this.stats.predictionsCount < 10) return 'Débutant';
   if (this.stats.predictionsCount < 50) return 'Intermédiaire';
   if (this.stats.predictionsCount < 100) return 'Avancé';

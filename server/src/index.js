@@ -23,6 +23,8 @@ import leagueRoutes from './routes/leagues.js';
 import matchRoutes from './routes/matches.js';
 import newsRoutes from './routes/news.js';
 import standingRoutes from './routes/standings.js';
+import favoritesRoutes from './routes/favorites.js';
+import adminRoutes from './routes/admin.js';
 
 const app = express();
 const server = http.createServer(app);
@@ -48,23 +50,8 @@ app.use('/api/leagues', leagueRoutes);
 app.use('/api/matches', matchRoutes);
 app.use('/api/news', newsRoutes);
 app.use('/api/standings', standingRoutes);
-
-// Admin Sync Routes
-app.post('/api/admin/sync/full', async (req, res) => {
-  try {
-    syncService.fullSync(); // Run in background
-    res.json({ message: 'Full sync started in background' });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-app.get('/api/admin/sync/status', (req, res) => {
-  res.json({
-    sync: syncService.getSyncStatus(),
-    cron: cronJobs.getJobsStatus(),
-  });
-});
+app.use('/api/favorites', favoritesRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
