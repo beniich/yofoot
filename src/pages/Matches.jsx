@@ -1,55 +1,218 @@
 import React, { useState, useEffect } from 'react';
-import { matchService } from '../services/matches';
+import { Calendar, Play, Clock } from 'lucide-react';
 import { MatchCard } from '../components/matches/MatchCard';
+import { SafeArea } from '../components/SafeArea';
+import { hapticFeedback } from '../utils/haptics';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { getApiUrl } from '../config/api';
+import { format, addDays } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
-const Matches = () => {
+export default function Matches() {
+    const navigate = useNavigate();
     const [matches, setMatches] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [activeTab, setActiveTab] = useState('live');
+    const [selectedDate, setSelectedDate] = useState(new Date());
+    const [autoRefresh, setAutoRefresh] = useState(true);
 
+    // Fetch matches
     useEffect(() => {
-        const fetchMatches = async () => {
-            try {
-                const data = await matchService.getUpcoming(20);
-                setMatches(data);
-            } catch (err) {
-                setError('Failed to load matches');
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchMatches();
-    }, []);
+
+        // Auto-refresh live matches every 30 seconds
+        if (activeTab === 'live' && autoRefresh) {
+            const interval = setInterval(fetchMatches, 30000);
+            return () => clearInterval(interval);
+        }
+    }, [activeTab, selectedDate, autoRefresh]);
+
+    const fetchMatches = async () => {
+        try {
+            setLoading(true);
+            let endpoint = '';
+
+            switch (activeTab) {
+                case 'live':
+                    endpoint = `${getApiUrl()}/matches/live`;
+                    break;
+                case 'upcoming':
+                    endpoint = `${getApiUrl()}/matches/upcoming?limit=20`;
+                    break;
+                case 'finished':
+                    endpoint = `${getApiUrl()}/matches?status=FINISHED&limit=20`;
+                    break;
+                default:
+                    endpoint = `${getApiUrl()}/matches/live`;
+            }
+
+            const response = await axios.get(endpoint);
+            const data = response.data.matches || response.data;
+            setMatches(Array.isArray(data) ? data : []);
+        } catch (error) {
+            console.error('Error fetching matches:', error);
+            setMatches([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleTabChange = (tab) => {
+        hapticFeedback.selection();
+        setActiveTab(tab);
+    };
+
+    const handleMatchClick = (matchId) => {
+        hapticFeedback.light();
+        navigate(`/matches/${matchId}`);
+    };
+
+    // Date selector
+    const dates = Array.from({ length: 7 }, (_, i) => addDays(new Date(), i - 3));
 
     return (
-        <div className="min-h-screen bg-charcoal p-6">
-            <div className="max-w-7xl mx-auto">
-                <header className="mb-10">
-                    <h1 className="text-4xl font-serif italic font-black text-white mb-2">
-                        Upcoming <span className="text-gold">Matches</span>
-                    </h1>
-                    <p className="text-white/50 text-xs font-bold uppercase tracking-[0.2em]">Live Scores & Scheduled Fixtures</p>
-                </header>
+        <SafeArea className="min-h-screen bg-charcoal pb-20">
+            {/* Header */}
+            <header className="sticky top-0 z-20 bg-charcoal/95 backdrop-blur-xl border-b border-white/10">
+                <div className="px-6 py-4">
+                    <div className="flex items-center justify-between mb-4">
+                        <div>
+                            <h1 className="text-3xl font-bold text-white">Matchs</h1>
+                            <p className="text-sm text-gray-400 mt-1">
+                                Scores et résultats en direct
+                            </p>
+                        </div>
+                        {activeTab === 'live' && (
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-red-500/20 border border-red-500/30 rounded-full">
+                                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                                <span className="text-xs font-bold text-red-500">LIVE</span>
+                            </div>
+                        )}
+                    </div>
 
+                    {/* Tabs */}
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => handleTabChange('live')}
+                            className={`flex-1 h-12 rounded-xl font-medium transition-all ${activeTab === 'live'
+                                    ? 'bg-red-500 text-white'
+                                    : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                                }`}
+                        >
+                            <div className="flex items-center justify-center gap-2">
+                                <Play size={16} />
+                                <span>Live</span>
+                            </div>
+                        </button>
+                        <button
+                            onClick={() => handleTabChange('upcoming')}
+                            className={`flex-1 h-12 rounded-xl font-medium transition-all ${activeTab === 'upcoming'
+                                    ? 'bg-gold text-charcoal-dark'
+                                    : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                                }`}
+                        >
+                            <div className="flex items-center justify-center gap-2">
+                                <Clock size={16} />
+                                <span>À venir</span>
+                            </div>
+                        </button>
+                        <button
+                            onClick={() => handleTabChange('finished')}
+                            className={`flex-1 h-12 rounded-xl font-medium transition-all ${activeTab === 'finished'
+                                    ? 'bg-gold text-charcoal-dark'
+                                    : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                                }`}
+                        >
+                            <div className="flex items-center justify-center gap-2">
+                                <Calendar size={16} />
+                                <span>Terminés</span>
+                            </div>
+                        </button>
+                    </div>
+
+                    {/* Date Selector (only for finished matches) */}
+                    {activeTab === 'finished' && (
+                        <div className="flex gap-2 overflow-x-auto scrollbar-hide mt-4 pb-2">
+                            {dates.map((date) => {
+                                const isSelected = format(date, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd');
+                                return (
+                                    <button
+                                        key={date.toISOString()}
+                                        onClick={() => setSelectedDate(date)}
+                                        className={`flex-shrink-0 flex flex-col items-center justify-center w-16 h-16 rounded-xl transition-all ${isSelected
+                                                ? 'bg-gold text-charcoal-dark'
+                                                : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                                            }`}
+                                    >
+                                        <span className="text-xs font-medium uppercase">
+                                            {format(date, 'EEE', { locale: fr })}
+                                        </span>
+                                        <span className="text-lg font-bold">
+                                            {format(date, 'd')}
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            </header>
+
+            {/* Content */}
+            <main className="px-6 py-6">
                 {loading ? (
-                    <div className="flex justify-center items-center py-20">
-                        <div className="size-10 border-4 border-gold/20 border-t-gold rounded-full animate-spin"></div>
-                    </div>
-                ) : error ? (
-                    <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl text-center font-bold">
-                        {error}
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {matches.map((match) => (
-                            <MatchCard key={match._id} match={match} />
+                    <div className="space-y-4">
+                        {[1, 2, 3].map((i) => (
+                            <div
+                                key={i}
+                                className="h-48 bg-white/5 rounded-2xl animate-pulse"
+                            />
                         ))}
                     </div>
+                ) : matches.length > 0 ? (
+                    <div className="space-y-4">
+                        {matches.map((match) => (
+                            <MatchCard
+                                key={match._id}
+                                match={match}
+                                onClick={() => handleMatchClick(match._id)}
+                            />
+                        ))}
+                    </div>
+                ) : (
+                    <div className="flex flex-col items-center justify-center py-20">
+                        <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mb-4">
+                            <Calendar size={32} className="text-gray-600" />
+                        </div>
+                        <p className="text-gray-400 text-center">
+                            {activeTab === 'live'
+                                ? 'Aucun match en direct'
+                                : activeTab === 'upcoming'
+                                    ? 'Aucun match à venir'
+                                    : 'Aucun match terminé'}
+                        </p>
+                    </div>
                 )}
-            </div>
-        </div>
-    );
-};
 
-export default Matches;
+                {/* Auto-refresh toggle for live matches */}
+                {activeTab === 'live' && matches.length > 0 && (
+                    <div className="mt-6 flex items-center justify-center">
+                        <button
+                            onClick={() => setAutoRefresh(!autoRefresh)}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${autoRefresh
+                                    ? 'bg-gold/20 border border-gold text-gold'
+                                    : 'bg-white/5 border border-white/10 text-gray-400'
+                                }`}
+                        >
+                            <div className={`w-2 h-2 rounded-full ${autoRefresh ? 'bg-gold animate-pulse' : 'bg-gray-600'}`} />
+                            <span className="text-sm font-medium">
+                                Actualisation auto {autoRefresh ? 'activée' : 'désactivée'}
+                            </span>
+                        </button>
+                    </div>
+                )}
+            </main>
+        </SafeArea>
+    );
+}
