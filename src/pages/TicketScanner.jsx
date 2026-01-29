@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Camera, CheckCircle, XCircle, AlertCircle, History, Keyboard, FlashlightOff, Flashlight, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { ticketService } from '../services/tickets';
 
 // ============================================================================
 // TICKET SCANNER - INTERFACE FONCTIONNELLE
@@ -70,64 +71,44 @@ const TicketScanner = () => {
     // Valider le ticket via API
     const validateTicket = async (qrCode) => {
         try {
-            // Use environment variable or default
-            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+            const data = await ticketService.validate(qrCode);
 
-            const response = await fetch(`${API_URL}/tickets/validate-qr`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    qrCode,
-                    validatorId: 'MOCK_VALIDATOR_ID', // Replace with real user ID from auth context
-                }),
+            // Succès
+            setValidationResult({
+                success: true,
+                ticket: data.ticket,
+                message: data.message || 'Ticket validated successfully',
             });
 
-            const data = await response.json();
-
-            if (response.ok) {
-                // Succès
-                setValidationResult({
+            // Ajouter à l'historique
+            setScanHistory((prev) => [
+                {
+                    id: Date.now(),
+                    ticketNumber: data.ticket.ticketNumber,
+                    member: data.ticket.member,
+                    timestamp: new Date(),
                     success: true,
-                    ticket: data.ticket,
-                    message: data.message,
-                });
-
-                // Ajouter à l'historique
-                setScanHistory((prev) => [
-                    {
-                        id: Date.now(),
-                        ticketNumber: data.ticket.ticketNumber,
-                        member: data.ticket.member,
-                        timestamp: new Date(),
-                        success: true,
-                    },
-                    ...prev.slice(0, 9), // Garder seulement les 10 derniers
-                ]);
-            } else {
-                // Erreur
-                setValidationResult({
-                    success: false,
-                    message: data.message,
-                });
-
-                setScanHistory((prev) => [
-                    {
-                        id: Date.now(),
-                        error: data.message,
-                        timestamp: new Date(),
-                        success: false,
-                    },
-                    ...prev.slice(0, 9),
-                ]);
-            }
+                },
+                ...prev.slice(0, 9), // Garder seulement les 10 derniers
+            ]);
         } catch (error) {
             console.error('Validation error:', error);
+            const errorMessage = error.response?.data?.message || 'Invalid ticket or network error';
+
             setValidationResult({
                 success: false,
-                message: 'Network error. Please try again.',
+                message: errorMessage,
             });
+
+            setScanHistory((prev) => [
+                {
+                    id: Date.now(),
+                    error: errorMessage,
+                    timestamp: new Date(),
+                    success: false,
+                },
+                ...prev.slice(0, 9),
+            ]);
         }
     };
 
@@ -135,8 +116,6 @@ const TicketScanner = () => {
     const simulateScan = () => {
         // En production, ceci serait remplacé par une vraie détection QR
         const mockQrCode = 'eyJ...'; // Mock QR logic
-        // Pour tester, on peut utiliser un QR valide si on en connaît un, 
-        // ou laisser le backend rejeter le mock.
         validateTicket(mockQrCode);
     };
 
@@ -215,8 +194,8 @@ const TicketScanner = () => {
                     <button
                         onClick={toggleFlash}
                         className={`p-2 rounded-full backdrop-blur-md text-white border transition-colors ${flashOn
-                                ? 'bg-gold/20 border-gold text-gold'
-                                : 'bg-black/40 border-white/10 hover:bg-white/10'
+                            ? 'bg-gold/20 border-gold text-gold'
+                            : 'bg-black/40 border-white/10 hover:bg-white/10'
                             }`}
                     >
                         {flashOn ? <Flashlight size={20} /> : <FlashlightOff size={20} />}
@@ -286,8 +265,8 @@ const TicketScanner = () => {
                             {/* Icon */}
                             <div
                                 className={`w-20 h-20 rounded-full flex items-center justify-center border-2 ${validationResult.success
-                                        ? 'bg-green-500/20 border-green-500 shadow-[0_0_30px_rgba(34,197,94,0.2)]'
-                                        : 'bg-red-500/20 border-red-500 shadow-[0_0_30px_rgba(239,68,68,0.2)]'
+                                    ? 'bg-green-500/20 border-green-500 shadow-[0_0_30px_rgba(34,197,94,0.2)]'
+                                    : 'bg-red-500/20 border-red-500 shadow-[0_0_30px_rgba(239,68,68,0.2)]'
                                     }`}
                             >
                                 {validationResult.success ? (
@@ -415,7 +394,7 @@ const TicketScanner = () => {
             {/* Manual Entry Modal */}
             {showManualEntry && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-6">
-                    <div className="w-full max-w-md bg-surface-dark rounded-2xl p-6 border border-white/10">
+                    <div className="w-full max-md bg-surface-dark rounded-2xl p-6 border border-white/10">
                         <h3 className="text-xl font-bold mb-4 text-white">Manual Entry</h3>
                         <input
                             type="text"

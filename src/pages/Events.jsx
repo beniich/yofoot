@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import BottomNavigation from '../components/BottomNavigation';
 import Button, { Card, Badge, Input, EmptyState } from '../components/UI';
-import { getEvents, getEventStats } from '../services/events';
+import { eventService } from '../services/events';
 
 const Events = () => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -14,22 +14,31 @@ const Events = () => {
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
-            const [eventsData, statsData] = await Promise.all([
-                getEvents(),
-                getEventStats()
-            ]);
+            try {
+                const [eventsData, statsData] = await Promise.all([
+                    eventService.getAll(),
+                    eventService.getStats()
+                ]);
 
-            // Adapt service data structure to UI if needed
-            const adaptedEvents = eventsData.map(e => ({
-                ...e,
-                coverImage: e.image,
-                startDate: `${e.date}T${e.time}:00`,
-                status: 'UPCOMING' // Default as not in service mock yet
-            }));
+                // Handle regular array or wrapped response
+                const eventList = Array.isArray(eventsData) ? eventsData : (eventsData.events || []);
 
-            setEvents(adaptedEvents);
-            setStats(statsData);
-            setLoading(false);
+                // Adapt service data structure to UI if needed
+                const adaptedEvents = eventList.map(e => ({
+                    ...e,
+                    coverImage: e.image || e.coverImage,
+                    startDate: e.startDate || `${e.date}T${e.time}:00`,
+                    status: e.status || 'UPCOMING'
+                }));
+
+                setEvents(adaptedEvents);
+                setStats(statsData);
+            } catch (err) {
+                console.error("Failed to load events data", err);
+                setEvents([]);
+            } finally {
+                setLoading(false);
+            }
         };
         fetchData();
     }, []);

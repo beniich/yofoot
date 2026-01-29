@@ -1,126 +1,123 @@
-import dotenv from 'dotenv';
+import 'dotenv/config';
 import mongoose from 'mongoose';
 import Member from '../models/Member.js';
 import Event from '../models/Event.js';
 import Product from '../models/Product.js';
+import Ticket from '../models/Ticket.js';
+import Order from '../models/Order.js';
 
-dotenv.config();
-
-async function seedDatabase() {
+const seedDatabase = async () => {
     try {
-        await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/footballhub');
-        console.log('Connected to MongoDB');
+        await mongoose.connect(process.env.MONGODB_URI);
+        console.log('Connected to MongoDB for seeding...');
 
         // Clear existing data
         await Member.deleteMany({});
         await Event.deleteMany({});
         await Product.deleteMany({});
-        console.log('Cleared existing data');
+        await Ticket.deleteMany({});
+        await Order.deleteMany({});
 
-        // Seed Members
-        const members = await Member.create([
+        console.log('Cleared existing data.');
+
+        // 1. Create Members
+        const members = await Member.insertMany([
             {
                 firstName: 'John',
                 lastName: 'Doe',
                 email: 'john@example.com',
-                phone: '+212600000001',
-                membershipType: 'VIP',
-                membershipStatus: 'Active',
+                phone: '123-456-7890',
+                role: 'Fan',
+                tier: 'VIP',
+                status: 'Active',
+                avatar: 'https://i.pravatar.cc/150?u=john'
             },
             {
                 firstName: 'Jane',
                 lastName: 'Smith',
                 email: 'jane@example.com',
-                phone: '+212600000002',
-                membershipType: 'Premium',
-                membershipStatus: 'Active',
-            },
-            {
-                firstName: 'Mehdi',
-                lastName: 'Benatia',
-                email: 'mehdi@example.com',
-                phone: '+212600000003',
-                membershipType: 'Premium',
-                membershipStatus: 'Active',
-                role: 'Defender',
-                tier: 'ELITE'
-            },
+                phone: '098-765-4321',
+                role: 'Player',
+                tier: 'Elite',
+                status: 'Active',
+                avatar: 'https://i.pravatar.cc/150?u=jane'
+            }
         ]);
-        console.log(`✅ Created ${members.length} members`);
+        console.log(`Created ${members.length} members.`);
 
-        // Seed Events
-        const events = await Event.create([
-            {
-                title: 'FC Lions vs. Tigers',
-                description: 'Premier League Match',
-                category: 'Match',
-                startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // +7 days
-                venue: 'Main Stadium',
-                address: {
-                    city: 'Casablanca',
-                    country: 'Morocco',
-                },
-                ticketPrice: 450,
-                maxCapacity: 5000,
-                status: 'Published',
-                organizer: members[0]._id,
-                coverImage: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800&q=80'
-            },
-            {
-                title: 'U-18 Tournament Finals',
-                description: 'Youth Championship',
-                category: 'Tournament',
-                startDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // +14 days
-                venue: 'Training Ground A',
-                address: {
-                    city: 'Rabat',
-                    country: 'Morocco',
-                },
-                ticketPrice: 0,
-                maxCapacity: 1000,
-                status: 'Published',
-                organizer: members[1]._id,
-                coverImage: 'https://images.unsplash.com/photo-1517466787929-bc90951d0974?w=800&q=80'
-            },
-        ]);
-        console.log(`✅ Created ${events.length} events`);
-
-        // Seed Products
-        const products = await Product.create([
+        // 2. Create Products
+        const products = await Product.insertMany([
             {
                 name: '23/24 Home Jersey',
-                description: 'Official home jersey for the season',
+                description: 'Official club home jersey for the 2023/24 season.',
                 category: 'Jersey',
-                price: 850,
+                price: 85,
+                comparePrice: 100,
+                mainImage: 'https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=500&q=80',
                 stock: 50,
                 isFeatured: true,
-                mainImage: 'https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=500&q=80'
+                rating: 4.8,
+                salesCount: 124
             },
             {
                 name: 'Pro Training Top',
-                description: 'Professional training gear',
+                description: 'Breathable training top used by the first team.',
                 category: 'Training',
-                price: 550,
+                price: 55,
+                mainImage: 'https://images.unsplash.com/photo-1556906781-9a412961c28c?w=500&q=80',
                 stock: 30,
-                mainImage: 'https://images.unsplash.com/photo-1556906781-9a412961c28c?w=500&q=80'
+                isFeatured: true,
+                rating: 4.6,
+                salesCount: 89
+            }
+        ]);
+        console.log(`Created ${products.length} products.`);
+
+        // 3. Create Events
+        const events = await Event.insertMany([
+            {
+                title: 'FC Lions vs. Tigers',
+                description: 'The big derby match of the season.',
+                category: 'Match',
+                startDate: new Date('2024-10-12T19:00:00'),
+                venue: 'Main Stadium',
+                coverImage: 'https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=800&q=80',
+                capacity: 50000,
+                ticketPrice: 45,
+                status: 'Published'
             },
             {
-                name: 'Club Scarf',
-                description: 'Official supporter scarf',
-                category: 'Accessories',
-                price: 200,
-                stock: 100,
-                mainImage: 'https://images.unsplash.com/photo-1601924994987-69e26d50dc26?w=500&q=80'
-            },
+                title: 'Youth Tournament',
+                description: 'Annual youth academy tournament.',
+                category: 'Tournament',
+                startDate: new Date('2024-11-20T10:00:00'),
+                venue: 'Training Complex',
+                coverImage: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800&q=80',
+                capacity: 500,
+                ticketPrice: 15,
+                status: 'Published'
+            }
         ]);
-        console.log(`✅ Created ${products.length} products`);
+        console.log(`Created ${events.length} events.`);
 
-        console.log('🎉 Database seeded successfully!');
+        // 4. Create Tickets for first member
+        await Ticket.create({
+            event: events[0]._id,
+            member: members[0]._id,
+            ticketType: 'VIP',
+            price: events[0].ticketPrice * 2,
+            seating: { section: 'A', row: '12', seat: '45' },
+            status: 'Valid'
+        });
+
+        console.log('Created sample tickets.');
+
+        console.log('Database seeded successfully! 🌱');
         process.exit(0);
     } catch (error) {
-        console.error('❌ Seed error:', error);
+        console.error('Error seeding database:', error);
         process.exit(1);
     }
-}
+};
 
 seedDatabase();

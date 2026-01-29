@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import BottomNavigation from '../components/BottomNavigation';
 import Button, { Card, Badge, Input, EmptyState } from '../components/UI';
-import { getProducts, createOrder } from '../services/shop';
+import { shopService } from '../services/shop';
 
 const Shop = () => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -15,9 +15,26 @@ const Shop = () => {
     useEffect(() => {
         const fetchProducts = async () => {
             setLoading(true);
-            const data = await getProducts();
-            setProducts(data);
-            setLoading(false);
+            try {
+                const data = await shopService.getAllProducts();
+                // Handle direct array or wrapped object
+                const productList = Array.isArray(data) ? data : (data.products || []);
+
+                // Keep UI compatibility
+                const adaptedProducts = productList.map(p => ({
+                    ...p,
+                    id: p.id || p._id,
+                    images: Array.isArray(p.images) && p.images.length > 0 ? p.images : [p.mainImage || 'https://via.placeholder.com/300'],
+                    reviews: p.reviews || Math.floor(Math.random() * 200) + 10 // Mock reviews if missing
+                }));
+
+                setProducts(adaptedProducts);
+            } catch (err) {
+                console.error("Failed to load products", err);
+                setProducts([]);
+            } finally {
+                setLoading(false);
+            }
         };
         fetchProducts();
     }, []);
@@ -29,15 +46,16 @@ const Shop = () => {
     });
 
     const addToCart = (product) => {
-        const existingItem = cart.find(item => item.id === product.id);
+        const productId = product.id || product._id;
+        const existingItem = cart.find(item => item.id === productId);
         if (existingItem) {
             setCart(cart.map(item =>
-                item.id === product.id
+                item.id === productId
                     ? { ...item, quantity: item.quantity + 1 }
                     : item
             ));
         } else {
-            setCart([...cart, { ...product, quantity: 1 }]);
+            setCart([...cart, { ...product, id: productId, quantity: 1 }]);
         }
     };
 
@@ -58,13 +76,29 @@ const Shop = () => {
     };
 
     const handleCheckout = async () => {
-        const result = await createOrder(cart);
-        if (result.success) {
-            alert(`Order placed successfully! Order ID: ${result.orderId}`);
-            setCart([]);
-            setShowCart(false);
-        } else {
-            alert('Failed to place order. Please try again.');
+        try {
+            const orderData = {
+                member: 'MOCK_USER_ID', // Replace with real ID
+                items: cart.map(item => ({
+                    product: item.id,
+                    quantity: item.quantity,
+                    price: item.price
+                })),
+                subtotal: cartTotal,
+                total: cartTotal // Add tax/shipping logic if needed
+            };
+
+            const result = await shopService.createOrder(orderData);
+            if (result.success || result.order) {
+                alert(`Order placed successfully! Order ID: ${result.order?.orderNumber || result.orderId}`);
+                setCart([]);
+                setShowCart(false);
+            } else {
+                alert('Failed to place order. Please try again.');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Error during checkout. Is the backend running?');
         }
     };
 

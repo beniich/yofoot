@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import BottomNavigation from '../components/BottomNavigation';
-import { getMembers, updateMemberStatus } from '../services/members';
+import { memberService } from '../services/members';
 
 const Members = () => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -12,17 +12,22 @@ const Members = () => {
     useEffect(() => {
         const fetchMembers = async () => {
             setLoading(true);
-            const data = await getMembers();
-            // Map backend 'status' to 'isActive' for UI compatibility if needed
-            // Assuming service returns fields as needed or we adapt here
-            // My service returns 'status': 'Active'/'Inactive', UI used 'isActive' boolean
-            // Let's adapt the data
-            const adaptedData = data.map(m => ({
-                ...m,
-                isActive: m.status === 'Active'
-            }));
-            setMembers(adaptedData);
-            setLoading(false);
+            try {
+                const data = await memberService.getAll();
+                const memberList = Array.isArray(data) ? data : (data.members || []);
+
+                // Map backend 'status' to 'isActive' for UI compatibility
+                const adaptedData = memberList.map(m => ({
+                    ...m,
+                    isActive: m.status === 'Active'
+                }));
+                setMembers(adaptedData);
+            } catch (err) {
+                console.error(err);
+                setMembers([]);
+            } finally {
+                setLoading(false);
+            }
         };
         fetchMembers();
     }, []);
@@ -37,7 +42,7 @@ const Members = () => {
         ));
 
         // Call API
-        await updateMemberStatus(id, newStatus);
+        await memberService.update(id, { status: newStatus });
     };
 
     const filteredMembers = members.filter(member => {

@@ -2,13 +2,13 @@
 
 ## 📊 Vue d'Ensemble
 
-FootballHub est une **plateforme SaaS full-stack** combinant :
-- **Frontend React** (Vite) avec design premium
-- **Backend Node.js/Express** avec authentification JWT
-- **Service IA Python** (FastAPI) pour prédictions
-- **Base de données MongoDB** pour persistance
-- **Redis** pour cache et sessions
-- **Stripe** pour paiements et abonnements
+FootballHub est une **plateforme SaaS full-stack** complète combinant :
+- **Frontend React** (Vite) avec design premium (Glassmorphism, Gold/Dark theme)
+- **Backend Node.js/Express** avec architecture RESTful
+- **Base de données MongoDB** pour la gestion complexe des données (Membres, Billets, Boutique)
+- **Service Layer Frontend** découplé (Supporte Mock Data & Appels API réels)
+- **Système de Billetterie** avec QR Code et Scanner intégré
+- **Boutique E-commerce** complète
 
 ---
 
@@ -20,266 +20,148 @@ football-hub/
 ├── 🎨 FRONTEND (React + Vite)
 │   ├── src/
 │   │   ├── pages/              # Pages de l'application
-│   │   │   ├── Home.jsx        # Page d'accueil
-│   │   │   ├── Auth.jsx        # Connexion/Inscription
-│   │   │   ├── Profile.jsx     # Profil utilisateur
-│   │   │   ├── Subscription.jsx # Plans premium
-│   │   │   ├── Chat.jsx        # Salons communautaires
-│   │   │   ├── AIAgent.jsx     # Prédictions IA
-│   │   │   ├── Stats.jsx       # Statistiques
-│   │   │   ├── BetSlip.jsx     # Ticket de paris
-│   │   │   └── Standings.jsx   # Classements
+│   │   │   ├── Home.jsx        # Dashboard Principal
+│   │   │   ├── Shop.jsx        # Boutique (Nouveau)
+│   │   │   ├── Tickets.jsx     # Mes Billets (Nouveau)
+│   │   │   ├── TicketScanner.jsx # Scanner QR Staff (Nouveau)
+│   │   │   ├── Events.jsx      # Calendrier Événements (Nouveau)
+│   │   │   ├── Members.jsx     # Gestion Membres (Nouveau)
+│   │   │   ├── Stats.jsx       # Analyses détaillées
+│   │   │   ├── Standings.jsx   # Classements
+│   │   │   ├── AIAgent.jsx     # Assistant IA
+│   │   │   └── Chat.jsx        # Communauté
 │   │   │
-│   │   ├── components/         # Composants réutilisables
-│   │   │   ├── Header.jsx      # En-tête avec logo
-│   │   │   ├── BottomNavigation.jsx # Navigation mobile
-│   │   │   ├── MatchCard.jsx   # Carte de match
-│   │   │   └── LiveScore.jsx   # Score en direct
+│   │   ├── components/         # Composants UI
+│   │   │   ├── UI.jsx          # Kit UI (Button, Card, Badge...)
+│   │   │   ├── Header.jsx      # Navigation Supérieure
+│   │   │   └── BottomNavigation.jsx # Menu Mobile
 │   │   │
-│   │   ├── context/            # Gestion d'état global
-│   │   │   └── AuthContext.jsx # Contexte authentification
+│   │   ├── services/           # Couche de Service (API/Mock)
+│   │   │   ├── api.js          # Client Axios Centralisé
+│   │   │   ├── auth.js         # Service Auth
+│   │   │   ├── members.js      # Service Membres (avec mode Simulation)
+│   │   │   ├── events.js       # Service Événements (avec mode Simulation)
+│   │   │   ├── tickets.js      # Service Billetterie & Validation
+│   │   │   └── shop.js         # Service E-commerce
 │   │   │
-│   │   ├── services/           # Appels API
-│   │   │   ├── api.js          # Client Axios configuré
-│   │   │   └── auth.js         # Services d'authentification
-│   │   │
-│   │   ├── data/               # Données mock
-│   │   │   └── mockData.js     # Données de test
-│   │   │
-│   │   ├── App.jsx             # Routeur principal
-│   │   ├── main.jsx            # Point d'entrée
-│   │   └── index.css           # Styles globaux
+│   │   ├── App.jsx             # Routing
+│   │   └── main.jsx            # Entry Point
 │   │
-│   ├── public/
-│   │   └── logo.png            # Logo (couronne + ballon)
-│   │
-│   ├── index.html              # Template HTML
-│   ├── vite.config.js          # Configuration Vite
-│   ├── tailwind.config.js      # Configuration Tailwind CSS
-│   └── package.json            # Dépendances frontend
+│   ├── index.html              # HTML Root
+│   └── vite.config.js          # Config Build
 │
 ├── 🔧 BACKEND (Node.js + Express)
 │   ├── server/
 │   │   ├── src/
-│   │   │   ├── routes/         # Routes API
-│   │   │   │   ├── auth.js     # POST /api/auth/register, /login
-│   │   │   │   ├── matches.js  # GET /api/matches/live
-│   │   │   │   ├── leagues.js  # GET /api/leagues
-│   │   │   │   ├── standings.js # GET /api/standings/:id
-│   │   │   │   └── stripe.js   # POST /api/stripe/checkout
+│   │   │   ├── routes/         # Endpoints API
+│   │   │   │   ├── members.js  # CRUD Membres
+│   │   │   │   ├── events.js   # Gestion Événements
+│   │   │   │   ├── tickets.js  # Validation Billets
+│   │   │   │   ├── products.js # Catalogue Produits
+│   │   │   │   └── orders.js   # Commandes
 │   │   │   │
-│   │   │   ├── models/         # Modèles MongoDB
-│   │   │   │   ├── User.js     # Schéma utilisateur
-│   │   │   │   └── Match.js    # Schéma match
+│   │   │   ├── models/         # Schémas Mongoose
+│   │   │   │   ├── Member.js   # Profil Membre étendu
+│   │   │   │   ├── Event.js    # Un Événement
+│   │   │   │   ├── Ticket.js   # Billet unique (liens QRCode)
+│   │   │   │   ├── Product.js  # Article Boutique
+│   │   │   │   └── Order.js    # Transaction
 │   │   │   │
-│   │   │   ├── middleware/     # Middlewares
-│   │   │   │   └── auth.js     # Vérification JWT
+│   │   │   ├── seeds/          # Scripts de population DB
+│   │   │   │   └── index.js    # Générateur de fausses données
 │   │   │   │
-│   │   │   ├── services/       # Services métier
-│   │   │   │   ├── footballApi.js # API externe (API-Football)
-│   │   │   │   └── redis.js    # Client Redis
-│   │   │   │
-│   │   │   ├── socket.js       # WebSocket (Socket.io)
-│   │   │   └── index.js        # Serveur Express principal
+│   │   │   └── index.js        # Serveur Express & Loading Routes
 │   │   │
-│   │   ├── .env                # Variables d'environnement
-│   │   ├── Dockerfile          # Image Docker backend
-│   │   └── package.json        # Dépendances backend
+│   │   └── package.json
 │
-├── 🤖 AI SERVICE (Python + FastAPI)
-│   ├── ai-service/
-│   │   ├── main.py             # API FastAPI
-│   │   ├── model.pkl           # Modèle ML entraîné (à créer)
-│   │   ├── requirements.txt    # Dépendances Python
-│   │   └── Dockerfile          # Image Docker IA
-│
-├── 🐳 INFRASTRUCTURE
-│   ├── docker-compose.yml      # Orchestration services
-│   ├── vercel.json             # Config déploiement Vercel
-│   └── .vercelignore           # Fichiers exclus Vercel
-│
-└── 📚 DOCUMENTATION
-    ├── README.md               # Documentation principale
-    ├── DEPLOY.md               # Guide de déploiement
-    ├── DEVELOPMENT.md          # Guide développement
-    └── PROJECT_STRUCTURE.md    # Structure du projet
+└── � DOCS & CONFIG
+    ├── ARCHITECTURE.md         # Ce fichier
+    ├── BACKEND_CONNECTION_GUIDE.md # Guide de transition Mock -> API
+    └── ...
 ```
 
 ---
 
-## 🔄 Flux de Données
+## 🔄 Flux de Données & Fonctionnalités
 
-### 1. **Authentification**
-```
-User → Auth.jsx → /api/auth/login → JWT Token → localStorage → AuthContext
-```
+### 1. **Système Hybride (Mock vs API)**
+L'architecture Frontend est conçue pour être robuste :
+- **Mode Normal** : Les services (`src/services/*.js`) appellent le Backend via `api.js`.
+- **Mode Simulation** : Si le Backend ou MongoDB est indisponible, les services basculent automatiquement (via code commenté/décommenté) sur des données Mock locales, assurant une démo toujours fonctionnelle.
 
-### 2. **Abonnement Premium**
+### 2. **Billetterie & Contrôle d'Accès**
 ```
-User → Subscription.jsx → /api/stripe/checkout → Stripe → Webhook → Update User.plan
-```
-
-### 3. **Prédictions IA**
-```
-User → AIAgent.jsx → /api/ai/predict → FastAPI (ai-service) → ML Model → Prediction
+Achat Billet → Génération Ticket (DB) → Affichage QR (Tickets.jsx) → Scan par Staff (TicketScanner.jsx) → Validation API (/api/tickets/validate) → Mise à jour Status
 ```
 
-### 4. **Scores en Direct**
+### 3. **E-commerce (Shop)**
 ```
-Backend → API-Football → Redis Cache → Socket.io → Frontend (LiveScore.jsx)
+Catalogue (/api/products) → Panier Local (React State) → Checkout → Création Commande (/api/orders) → Mise à jour Stock
 ```
 
 ---
 
-## 🛠️ Technologies Utilisées
+## 📊 Modèles de Données Clés (MongoDB)
+
+### **Member**
+Profil complet du supporter/joueur.
+```javascript
+{
+  firstName, lastName, email,
+  role: 'Player' | 'Staff' | 'Fan',
+  tier: 'VIP' | 'Elite' | 'Standard',
+  status: 'Active' | 'Inactive',
+  orders: [Ref], tickets: [Ref]
+}
+```
+
+### **Event**
+Match, Entraînement ou Tournoi.
+```javascript
+{
+  title, category, date, venue,
+  capacity, attendees: [MemberRef],
+  image, status
+}
+```
+
+### **Product**
+Article en vente.
+```javascript
+{
+  name, price, stock, category,
+  images: [String], rating
+}
+```
+
+---
+
+## 🛠️ Stack Technique
 
 ### Frontend
-- **React 18** - Framework UI
-- **Vite** - Build tool ultra-rapide
-- **Tailwind CSS** - Styling utility-first
-- **React Router** - Navigation SPA
-- **Axios** - Client HTTP
-- **Socket.io Client** - WebSocket temps réel
-- **Framer Motion** - Animations
+- **React 18** + **Vite**
+- **Tailwind CSS** (Design System personnalisé : Gold/Charcoal)
+- **Lucide React** (Icônes)
+- **React Router Dom** (Navigation)
 
 ### Backend
-- **Node.js 18+** - Runtime JavaScript
-- **Express** - Framework web
-- **MongoDB + Mongoose** - Base de données NoSQL
-- **Redis** - Cache et sessions
-- **Socket.io** - WebSocket serveur
-- **JWT** - Authentification
-- **Bcrypt** - Hashage mots de passe
-- **Stripe** - Paiements
+- **Node.js** + **Express**
+- **MongoDB** + **Mongoose** (ODM)
+- **CORS** & **Dotenv**
 
-### AI Service
-- **Python 3.10+** - Langage ML
-- **FastAPI** - Framework API moderne
-- **scikit-learn** - Machine Learning
-- **pandas** - Manipulation données
-- **joblib** - Sérialisation modèle
-
-### DevOps
-- **Docker** - Conteneurisation
-- **Vercel** - Déploiement frontend
-- **Render** - Déploiement backend
-- **MongoDB Atlas** - Base cloud
-- **GitHub** - Versioning
+### Outils
+- **Git** (Gestion de version)
+- **Nodemon** (Dev Server Backend)
 
 ---
 
-## 🔐 Variables d'Environnement
+## � État Actuel du Projet
 
-### Frontend (`.env`)
-```env
-VITE_API_URL=http://localhost:5000/api
-```
-
-### Backend (`server/.env`)
-```env
-PORT=5000
-MONGO_URI=mongodb://localhost:27017/footballhub
-JWT_SECRET=your_super_secret_key_here
-REDIS_URL=redis://localhost:6379
-FOOTBALL_API_KEY=your_api_football_key
-STRIPE_SECRET=sk_test_...
-CLIENT_URL=http://localhost:3000
-```
-
-### AI Service (`ai-service/.env`)
-```env
-MODEL_PATH=./model.pkl
-```
+✅ **Frontend Complet** : Toutes les pages UI sont intégrées et responsive.
+✅ **Architecture Services** : Prête pour basculer entre Mock et Réel.
+✅ **Backend Configuré** : Routes et Modèles prêts.
+⚠️ **Base de Données** : Nécessite une instance MongoDB locale (port 27017) pour le mode "Full Stack". En l'absence de DB, le frontend tourne en mode "Simulation".
 
 ---
 
-## 🚀 Déploiement
-
-### Local
-```bash
-npm run dev:full  # Lance frontend + backend simultanément
-```
-
-### Production
-1. **Frontend** → Vercel (automatique depuis GitHub)
-2. **Backend** → Render (Node.js service)
-3. **AI Service** → Render (Python service)
-4. **Database** → MongoDB Atlas (cluster gratuit)
-
----
-
-## 📊 Modèle de Données
-
-### User
-```javascript
-{
-  _id: ObjectId,
-  username: String,
-  email: String (unique),
-  password: String (hashed),
-  plan: String (free|pro|elite),
-  createdAt: Date
-}
-```
-
-### Match
-```javascript
-{
-  _id: ObjectId,
-  fixtureId: Number,
-  leagueId: Number,
-  homeTeam: String,
-  awayTeam: String,
-  homeScore: Number,
-  awayScore: Number,
-  status: String,
-  startTime: Date
-}
-```
-
----
-
-## 🎨 Design System
-
-### Couleurs
-- **Primary**: `#135bec` (Bleu électrique)
-- **Gold**: `#D4AF37` (Or premium)
-- **Charcoal**: `#101622` (Fond sombre)
-- **Surface Dark**: `#1a2232` (Cartes)
-
-### Typographie
-- **Display**: Lexend (moderne, tech)
-- **Serif**: Playfair Display (élégance)
-- **Sans**: Inter (lisibilité)
-
----
-
-## 🔒 Sécurité
-
-✅ **JWT** pour authentification stateless
-✅ **Bcrypt** pour hashage mots de passe (10 rounds)
-✅ **CORS** configuré pour domaines autorisés
-✅ **Rate limiting** sur API (à implémenter)
-✅ **Validation** des inputs (à renforcer)
-✅ **HTTPS** en production (Vercel/Render)
-
----
-
-## 📈 Évolutivité
-
-### Actuellement Implémenté
-- ✅ Architecture microservices (Backend + IA séparés)
-- ✅ Cache Redis pour performances
-- ✅ WebSocket pour temps réel
-- ✅ Paiements Stripe intégrés
-
-### À Implémenter
-- ⏳ Entraînement modèle IA
-- ⏳ Tests unitaires (Jest, Pytest)
-- ⏳ CI/CD pipeline (GitHub Actions)
-- ⏳ Monitoring (Sentry, LogRocket)
-- ⏳ Analytics (Google Analytics, Mixpanel)
-
----
-
-**Architecture conçue pour scaler de 0 à 100k utilisateurs** 🚀
+**FootballHub+** est prêt pour la démonstration et l'extension.

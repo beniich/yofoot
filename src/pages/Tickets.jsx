@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import BottomNavigation from '../components/BottomNavigation';
 import Button, { Card, Badge, Modal, EmptyState } from '../components/UI';
-import { getTickets } from '../services/tickets';
+import { ticketService } from '../services/tickets';
 
 const Tickets = () => {
     const [selectedTicket, setSelectedTicket] = useState(null);
@@ -14,34 +14,53 @@ const Tickets = () => {
     useEffect(() => {
         const fetchTickets = async () => {
             setLoading(true);
-            const data = await getTickets();
+            try {
+                const data = await ticketService.getAll();
+                const ticketList = Array.isArray(data) ? data : (data.tickets || []);
 
-            // Adapt flat service data to nested event structure used by UI
-            const adaptedTickets = data.map(t => ({
-                id: t.id,
-                ticketNumber: t.ticketNumber,
-                ticketType: t.type,
-                qrCode: 'QR_CODE_DATA', // Mock QR
-                isValidated: t.isValidated,
-                purchaseDate: '2024-09-01', // Mock date
-                event: {
-                    id: t.eventId,
-                    title: t.eventName,
-                    category: 'MATCH', // Default to MATCH if missing in service
-                    coverImage: t.image,
-                    startDate: `${t.date}T${t.time}:00`,
-                    venue: t.venue,
-                    city: t.location ? t.location.split(',')[0] : 'Unknown',
-                    price: 0, // Not in ticket view usually
-                    status: t.status === 'upcoming' ? 'UPCOMING' : 'ENDED',
-                    section: t.section,
-                    row: t.row,
-                    seat: t.seat
-                }
-            }));
+                // Adapt flat service data to nested event structure used by UI
+                const adaptedTickets = ticketList.map(t => ({
+                    id: t.id || t._id,
+                    ticketNumber: t.ticketNumber,
+                    ticketType: t.type || t.ticketType || 'STANDARD',
+                    qrCode: t.qrCode || 'QR_CODE_DATA',
+                    isValidated: t.isValidated,
+                    purchaseDate: t.createdAt || '2024-09-01',
+                    event: t.event && typeof t.event === 'object' ? {
+                        id: t.event._id || t.event.id,
+                        title: t.event.title,
+                        category: t.event.category || 'MATCH',
+                        coverImage: t.event.coverImage || t.image,
+                        startDate: t.event.startDate,
+                        venue: t.event.venue,
+                        city: t.event.address?.city || 'Unknown',
+                        price: t.event.ticketPrice,
+                        status: t.status === 'upcoming' || t.status === 'Valid' ? 'UPCOMING' : 'ENDED',
+                        section: t.seating?.section || 'General',
+                        row: t.seating?.row || '-',
+                        seat: t.seating?.seat || '-'
+                    } : {
+                        id: t.eventId,
+                        title: t.eventName || 'Event Details Loading...',
+                        category: 'MATCH',
+                        coverImage: t.image,
+                        startDate: `${t.date}T${t.time}:00`,
+                        venue: t.venue,
+                        city: t.location ? t.location.split(',')[0] : 'Unknown',
+                        status: t.status === 'upcoming' ? 'UPCOMING' : 'ENDED',
+                        section: t.section || 'General',
+                        row: t.row || '-',
+                        seat: t.seat || '-'
+                    }
+                }));
 
-            setTickets(adaptedTickets);
-            setLoading(false);
+                setTickets(adaptedTickets);
+            } catch (err) {
+                console.error("Failed to load tickets", err);
+                setTickets([]);
+            } finally {
+                setLoading(false);
+            }
         };
         fetchTickets();
     }, []);
