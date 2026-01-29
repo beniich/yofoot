@@ -5,9 +5,13 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    font-size: 12px;
+  }
   body {
     @apply bg-charcoal text-white antialiased font-sans;
     font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+    font-size: 1rem;
   }
 }
 
@@ -41,7 +45,7 @@
   }
 
   .gold-glow {
-    box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+    box-shadow: 0 0 11px rgba(212, 175, 55, 0.3);
   }
   
   /* Utilities */
@@ -71,6 +75,11 @@
     @apply font-bold tracking-tight;
     font-family: 'Outfit', sans-serif;
   }
+
+  h1 { font-size: 1.5rem; } /* 18px */
+  h2 { font-size: 1.25rem; } /* 15px */
+  h3 { font-size: 1.125rem; } /* 13.5px */
+  h4, h5, h6 { font-size: 1rem; } /* 12px */
 }
 
 /* Specific Style Overrides from Snippets */
