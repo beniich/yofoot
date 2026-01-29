@@ -5,6 +5,11 @@ import Event from '../models/Event.js';
 import Product from '../models/Product.js';
 import Ticket from '../models/Ticket.js';
 import Order from '../models/Order.js';
+import League from '../models/League.js';
+import Team from '../models/Team.js';
+import Match from '../models/Match.js';
+import NewsArticle from '../models/NewsArticle.js';
+import Standing from '../models/Standing.js';
 
 const seedDatabase = async () => {
     try {
@@ -17,6 +22,11 @@ const seedDatabase = async () => {
         await Product.deleteMany({});
         await Ticket.deleteMany({});
         await Order.deleteMany({});
+        await League.deleteMany({});
+        await Team.deleteMany({});
+        await Match.deleteMany({});
+        await NewsArticle.deleteMany({});
+        await Standing.deleteMany({});
 
         console.log('Cleared existing data.');
 
@@ -111,6 +121,120 @@ const seedDatabase = async () => {
         });
 
         console.log('Created sample tickets.');
+
+        // 5. Create Leagues
+        const leagues = await League.insertMany([
+            {
+                apiFootballId: 39,
+                name: 'Premier League',
+                type: 'League',
+                logo: 'https://media.api-sports.io/football/leagues/39.png',
+                country: { name: 'England', code: 'GB', flag: 'https://media.api-sports.io/flags/gb.svg' },
+                isFeatured: true,
+                priority: 10,
+                followersCount: 15420
+            },
+            {
+                apiFootballId: 140,
+                name: 'La Liga',
+                type: 'League',
+                logo: 'https://media.api-sports.io/football/leagues/140.png',
+                country: { name: 'Spain', code: 'ES', flag: 'https://media.api-sports.io/flags/es.svg' },
+                isFeatured: true,
+                priority: 9,
+                followersCount: 12300
+            },
+            {
+                apiFootballId: 61,
+                name: 'Ligue 1',
+                type: 'League',
+                logo: 'https://media.api-sports.io/football/leagues/61.png',
+                country: { name: 'France', code: 'FR', flag: 'https://media.api-sports.io/flags/fr.svg' },
+                isFeatured: true,
+                priority: 8,
+                followersCount: 8500
+            }
+        ]);
+        console.log(`Created ${leagues.length} leagues.`);
+
+        // 6. Create Teams
+        const teams = await Team.insertMany([
+            {
+                apiFootballId: 42,
+                name: 'Arsenal',
+                logo: 'https://media.api-sports.io/football/teams/42.png',
+                country: 'England'
+            },
+            {
+                apiFootballId: 50,
+                name: 'Man City',
+                logo: 'https://media.api-sports.io/football/teams/50.png',
+                country: 'England'
+            },
+            {
+                apiFootballId: 541,
+                name: 'Real Madrid',
+                logo: 'https://media.api-sports.io/football/teams/541.png',
+                country: 'Spain'
+            }
+        ]);
+        console.log(`Created ${teams.length} teams.`);
+
+        // 7. Create Matches
+        await Match.insertMany([
+            {
+                apiFootballId: 1035041,
+                league: leagues[0]._id,
+                season: 2023,
+                homeTeam: { team: teams[0]._id, name: teams[0].name, logo: teams[0].logo },
+                awayTeam: { team: teams[1]._id, name: teams[1].name, logo: teams[1].logo },
+                matchDate: new Date(),
+                status: 'LIVE',
+                elapsed: 65,
+                score: { fulltime: { home: 1, away: 1 } }
+            },
+            {
+                apiFootballId: 1035042,
+                league: leagues[0]._id,
+                season: 2023,
+                homeTeam: { team: teams[2]._id, name: teams[2].name, logo: teams[2].logo },
+                awayTeam: { team: teams[1]._id, name: teams[1].name, logo: teams[1].logo },
+                matchDate: new Date(Date.now() + 86400000),
+                status: 'SCHEDULED',
+            }
+        ]);
+        console.log('Created sample matches.');
+
+        // 8. Create News
+        await NewsArticle.insertMany([
+            {
+                title: 'Kylian Mbappé rejoint le Real Madrid',
+                description: 'C\'est officiel, le prodige français s\'engage pour 5 saisons avec la Casa Blanca.',
+                content: 'L\'annonce tant attendue est enfin tombée...',
+                category: 'Transfer',
+                image: 'https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=1000&q=80',
+                publishedAt: new Date(),
+                viewCount: 15400,
+                likeCount: 2300,
+                isFeatured: true,
+                source: 'FootballHub',
+                league: leagues[1]._id
+            },
+            {
+                title: 'Premier League : Arsenal en tête de la course',
+                description: 'Les Gunners conservent leur avance après une victoire cruciale.',
+                content: 'Les hommes de Mikel Arteta ont montré une solidité impressionnante...',
+                category: 'Match',
+                image: 'https://images.unsplash.com/photo-1551958219-acbc608c6377?w=1000&q=80',
+                publishedAt: new Date(Date.now() - 7200000),
+                viewCount: 8900,
+                likeCount: 1200,
+                isFeatured: true,
+                source: 'Evening Standard',
+                league: leagues[0]._id
+            }
+        ]);
+        console.log('Created sample news articles.');
 
         console.log('Database seeded successfully! 🌱');
         process.exit(0);

@@ -1,5 +1,6 @@
 import express from 'express';
 import Match from '../models/Match.js';
+import MatchLineup from '../models/MatchLineup.js';
 import footballApi from '../services/footballApi.js';
 
 const router = express.Router();
@@ -115,6 +116,61 @@ router.post('/sync/:leagueId/:season', async (req, res) => {
             Number(season)
         );
         res.json({ message: 'Matches synced', count: matches.length });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// GET /api/matches/:id/lineups - Get match lineups
+router.get('/:id/lineups', async (req, res) => {
+    try {
+        const match = await Match.findById(req.params.id);
+        if (!match) return res.status(404).json({ message: 'Match not found' });
+
+        const lineups = await MatchLineup.find({ match: req.params.id })
+            .populate({
+                path: 'startingEleven.player',
+                select: 'firstName lastName photo jerseyNumber position rating stats nationality dateOfBirth',
+            })
+            .populate({
+                path: 'substitutes.player',
+                select: 'firstName lastName photo jerseyNumber position rating stats nationality dateOfBirth',
+            });
+
+        if (!lineups || lineups.length === 0) {
+            return res.json(null);
+        }
+
+        const homeLineup = lineups.find((l) => l.team.toString() === match.homeTeam.team.toString());
+        const awayLineup = lineups.find((l) => l.team.toString() === match.awayTeam.team.toString());
+
+        const formatPlayer = (p) => ({
+            id: p.player._id,
+            name: `${p.player.firstName} ${p.player.lastName}`,
+            number: p.jerseyNumber,
+            position: p.position,
+            x: p.positionX,
+            y: p.positionY,
+            photo: p.player.photo,
+            rating: p.matchStats?.rating || p.player.rating?.overall / 10 || 7.0,
+            age: p.player.age,
+            nationality: p.player.nationality,
+            stats: p.player.stats,
+            ratingDetails: p.player.rating,
+        });
+
+        res.json({
+            home: {
+                formation: homeLineup?.formation || '4-3-3',
+                players: homeLineup?.startingEleven.map(formatPlayer) || [],
+                substitutes: homeLineup?.substitutes.map(formatPlayer) || [],
+            },
+            away: {
+                formation: awayLineup?.formation || '4-3-3',
+                players: awayLineup?.startingEleven.map(formatPlayer) || [],
+                substitutes: awayLineup?.substitutes.map(formatPlayer) || [],
+            },
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

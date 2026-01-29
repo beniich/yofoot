@@ -18,6 +18,7 @@ import TicketScanner from './pages/TicketScanner';
 import News from './pages/News';
 import Leagues from './pages/Leagues';
 import Matches from './pages/Matches';
+import MatchDetail from './pages/MatchDetail';
 
 function App() {
   return (
@@ -40,6 +41,7 @@ function App() {
         <Route path="/news" element={<News />} />
         <Route path="/leagues" element={<Leagues />} />
         <Route path="/matches" element={<Matches />} />
+        <Route path="/matches/:id" element={<MatchDetail />} />
         <Route path="/auth" element={<Auth />} />
       </Routes>
     </div>
