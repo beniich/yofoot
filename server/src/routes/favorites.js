@@ -1,10 +1,10 @@
 import express from 'express';
 import User from '../models/User.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { protect } from '../middleware/auth.js';
 
 const router = express.Router();
 
-router.use(authenticateToken);
+router.use(protect);
 
 // GET /api/favorites - Get user favorites
 router.get('/', async (req, res) => {
