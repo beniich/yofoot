@@ -1,0 +1,112 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  role      Role     @default(FAN)
+  clubId    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  favoriteTeams   String[]
+  favoriteLeagues String[]
+  pushToken       String?
+}
+
+enum Role {
+  ADMIN
+  CLUB
+  FAN
+}
+
+model Club {
+  id    String @id @default(uuid())
+  name  String
+  teams Team[]
+}
+
+model League {
+  id         String    @id @default(uuid())
+  externalId String    @unique
+  name       String
+  logo       String?
+  type       String?
+  country    String?
+  countryCode String?
+  isFeatured  Boolean  @default(false)
+  teams      Team[]
+  matches    Match[]
+  standings  Standing[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Team {
+  id         String   @id @default(uuid())
+  externalId String   @unique
+  name       String
+  logo       String?
+  clubId     String?
+  club       Club?    @relation(fields: [clubId], references: [id])
+  leagueId   String?
+  league     League?  @relation(fields: [leagueId], references: [id])
+  players    Player[]
+  homeMatches Match[] @relation("HomeTeam")
+  awayMatches Match[] @relation("AwayTeam")
+}
+
+model Player {
+  id         String   @id @default(uuid())
+  externalId String?  @unique
+  name       String
+  position   String?
+  teamId     String
+  team       Team     @relation(fields: [teamId], references: [id])
+  photo      String?
+  number     Int?
+}
+
+model Match {
+  id         String   @id @default(uuid())
+  externalId String   @unique
+  leagueId   String
+  league     League   @relation(fields: [leagueId], references: [id])
+  matchDate  DateTime
+  status     String
+  elapsed    Int?
+  
+  homeTeamId String
+  homeTeam   Team     @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  awayTeamId String
+  awayTeam   Team     @relation("AwayTeam", fields: [awayTeamId], references: [id])
+  
+  homeScore  Int      @default(0)
+  awayScore  Int      @default(0)
+  
+  venue      String?
+  city       String?
+  
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Standing {
+  id        String   @id @default(uuid())
+  leagueId  String
+  league    League   @relation(fields: [leagueId], references: [id])
+  season    Int
+  rankings  Json     // Pour stocker le tableau de classement complet
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
