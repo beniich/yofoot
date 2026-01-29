@@ -14,6 +14,7 @@ import { SubscriptionsModule } from './modules/subscriptions/subscriptions.modul
 import { ShopModule } from './modules/shop/shop.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { BadgesModule } from './modules/badges/badges.module';
+import { LeaguesModule } from './modules/leagues/leagues.module';
 
 @Module({
   imports: [
@@ -34,6 +35,9 @@ import { BadgesModule } from './modules/badges/badges.module';
     ShopModule,
     OrdersModule,
     BadgesModule,
+    LeaguesModule,
   ],
+  controllers: [],
+  providers: [],
 })
 export class AppModule { }

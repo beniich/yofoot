@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Play, Clock } from 'lucide-react';
+import { Calendar, Play, Clock, Search } from 'lucide-react';
 import { MatchCard } from '../components/matches/MatchCard';
 import { SafeArea } from '../components/SafeArea';
 import { hapticFeedback } from '../utils/haptics';
@@ -16,35 +16,38 @@ export default function Matches() {
     const [activeTab, setActiveTab] = useState('live');
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [autoRefresh, setAutoRefresh] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
 
     // Fetch matches
     useEffect(() => {
         fetchMatches();
 
         // Auto-refresh live matches every 30 seconds
-        if (activeTab === 'live' && autoRefresh) {
+        if (activeTab === 'live' && autoRefresh && !searchQuery) {
             const interval = setInterval(fetchMatches, 30000);
             return () => clearInterval(interval);
         }
-    }, [activeTab, selectedDate, autoRefresh]);
+    }, [activeTab, selectedDate, autoRefresh, searchQuery]);
 
     const fetchMatches = async () => {
         try {
             setLoading(true);
-            let endpoint = '';
-
-            switch (activeTab) {
-                case 'live':
-                    endpoint = `${getApiUrl()}/matches/live`;
-                    break;
-                case 'upcoming':
-                    endpoint = `${getApiUrl()}/matches/upcoming?limit=20`;
-                    break;
-                case 'finished':
-                    endpoint = `${getApiUrl()}/matches?status=FINISHED&limit=20`;
-                    break;
-                default:
-                    endpoint = `${getApiUrl()}/matches/live`;
+            if (searchQuery) {
+                endpoint = `${getApiUrl()}/matches/search?q=${searchQuery}`;
+            } else {
+                switch (activeTab) {
+                    case 'live':
+                        endpoint = `${getApiUrl()}/matches/live`;
+                        break;
+                    case 'upcoming':
+                        endpoint = `${getApiUrl()}/matches/upcoming?limit=20`;
+                        break;
+                    case 'finished':
+                        endpoint = `${getApiUrl()}/matches?status=FINISHED&limit=20`;
+                        break;
+                    default:
+                        endpoint = `${getApiUrl()}/matches/live`;
+                }
             }
 
             const response = await axios.get(endpoint);
@@ -91,13 +94,27 @@ export default function Matches() {
                         )}
                     </div>
 
+                    {/* Search Bar */}
+                    <div className="relative mb-4">
+                        <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                            <Search size={18} className="text-gray-400" />
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="Rechercher un match ou une équipe (ex: Romania)..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full h-12 pl-12 pr-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gold/50 transition-all"
+                        />
+                    </div>
+
                     {/* Tabs */}
                     <div className="flex gap-2">
                         <button
                             onClick={() => handleTabChange('live')}
                             className={`flex-1 h-12 rounded-xl font-medium transition-all ${activeTab === 'live'
-                                    ? 'bg-red-500 text-white'
-                                    : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                                ? 'bg-red-500 text-white'
+                                : 'bg-white/5 text-gray-400 hover:bg-white/10'
                                 }`}
                         >
                             <div className="flex items-center justify-center gap-2">
@@ -108,8 +125,8 @@ export default function Matches() {
                         <button
                             onClick={() => handleTabChange('upcoming')}
                             className={`flex-1 h-12 rounded-xl font-medium transition-all ${activeTab === 'upcoming'
-                                    ? 'bg-gold text-charcoal-dark'
-                                    : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                                ? 'bg-gold text-charcoal-dark'
+                                : 'bg-white/5 text-gray-400 hover:bg-white/10'
                                 }`}
                         >
                             <div className="flex items-center justify-center gap-2">
@@ -120,8 +137,8 @@ export default function Matches() {
                         <button
                             onClick={() => handleTabChange('finished')}
                             className={`flex-1 h-12 rounded-xl font-medium transition-all ${activeTab === 'finished'
-                                    ? 'bg-gold text-charcoal-dark'
-                                    : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                                ? 'bg-gold text-charcoal-dark'
+                                : 'bg-white/5 text-gray-400 hover:bg-white/10'
                                 }`}
                         >
                             <div className="flex items-center justify-center gap-2">
@@ -141,8 +158,8 @@ export default function Matches() {
                                         key={date.toISOString()}
                                         onClick={() => setSelectedDate(date)}
                                         className={`flex-shrink-0 flex flex-col items-center justify-center w-16 h-16 rounded-xl transition-all ${isSelected
-                                                ? 'bg-gold text-charcoal-dark'
-                                                : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                                            ? 'bg-gold text-charcoal-dark'
+                                            : 'bg-white/5 text-gray-400 hover:bg-white/10'
                                             }`}
                                     >
                                         <span className="text-xs font-medium uppercase">
@@ -201,8 +218,8 @@ export default function Matches() {
                         <button
                             onClick={() => setAutoRefresh(!autoRefresh)}
                             className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${autoRefresh
-                                    ? 'bg-gold/20 border border-gold text-gold'
-                                    : 'bg-white/5 border border-white/10 text-gray-400'
+                                ? 'bg-gold/20 border border-gold text-gold'
+                                : 'bg-white/5 border border-white/10 text-gray-400'
                                 }`}
                         >
                             <div className={`w-2 h-2 rounded-full ${autoRefresh ? 'bg-gold animate-pulse' : 'bg-gray-600'}`} />

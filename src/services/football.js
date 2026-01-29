@@ -1,6 +1,7 @@
 import axios from "axios"
+import { getApiUrl } from "../config/api"
 
-const API = "http://localhost:5000/api"
+const API = getApiUrl()
 
 export const getLive = async () => {
     try {
@@ -8,6 +9,16 @@ export const getLive = async () => {
         return r.data
     } catch (error) {
         console.error("Error fetching live matches", error)
+        return []
+    }
+}
+
+export const searchMatches = async (query) => {
+    try {
+        const r = await axios.get(`${API}/matches/search?q=${query}`)
+        return r.data
+    } catch (error) {
+        console.error("Error searching matches", error)
         return []
     }
 }
