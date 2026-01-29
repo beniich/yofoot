@@ -6,13 +6,13 @@ export class LeaguesService {
     constructor(private prisma: PrismaService) { }
 
     async findAll() {
-        return this.prisma.league.findMany({
+        return await this.prisma.league.findMany({
             where: { isFeatured: true },
         });
     }
 
     async findOne(id: string) {
-        return this.prisma.league.findUnique({
+        return await this.prisma.league.findUnique({
             where: { id },
         });
     }

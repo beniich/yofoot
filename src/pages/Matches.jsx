@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Play, Clock, Search } from 'lucide-react';
+import { Calendar, Play, Clock, Search, Heart } from 'lucide-react';
 import { MatchCard } from '../components/matches/MatchCard';
 import { SafeArea } from '../components/SafeArea';
 import { hapticFeedback } from '../utils/haptics';
@@ -18,10 +18,12 @@ export default function Matches() {
     const [autoRefresh, setAutoRefresh] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCompetition, setSelectedCompetition] = useState('all');
+    const [favorites, setFavorites] = useState([]);
 
     // Fetch matches
     useEffect(() => {
         fetchMatches();
+        fetchFavorites();
 
         // Auto-refresh live matches every 30 seconds
         if (activeTab === 'live' && autoRefresh && !searchQuery) {
@@ -70,6 +72,36 @@ export default function Matches() {
     const handleMatchClick = (matchId) => {
         hapticFeedback.light();
         navigate(`/matches/${matchId}`);
+    };
+
+    const fetchFavorites = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            const response = await axios.get(`${getApiUrl()}/users/favorites`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setFavorites(response.data.favoriteLeagues || []);
+        } catch (error) {
+            console.error('Error fetching favorites:', error);
+        }
+    };
+
+    const toggleFavorite = async (name) => {
+        try {
+            hapticFeedback.medium();
+            const token = localStorage.getItem('token');
+            if (!token) {
+                navigate('/auth');
+                return;
+            }
+            await axios.post(`${getApiUrl()}/users/favorites/league`, { name }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            fetchFavorites();
+        } catch (error) {
+            console.error('Error toggling favorite:', error);
+        }
     };
 
     // Date selector
@@ -187,18 +219,30 @@ export default function Matches() {
                             >
                                 Tous
                             </button>
-                            {[...new Set(matches.map(m => m.league?.name || m.competition || 'Autres'))].map((comp) => (
-                                <button
-                                    key={comp}
-                                    onClick={() => setSelectedCompetition(comp)}
-                                    className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all ${selectedCompetition === comp
-                                        ? 'bg-gold text-charcoal'
-                                        : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/10'
-                                        }`}
-                                >
-                                    {comp}
-                                </button>
-                            ))}
+                            {[...new Set(matches.map(m => m.league?.name || m.competition || 'Autres'))].map((comp) => {
+                                const isFav = favorites.includes(comp);
+                                return (
+                                    <div key={comp} className="flex-shrink-0 flex items-center gap-1">
+                                        <button
+                                            onClick={() => setSelectedCompetition(comp)}
+                                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${selectedCompetition === comp
+                                                ? 'bg-gold text-charcoal'
+                                                : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/10'
+                                                }`}
+                                        >
+                                            {comp}
+                                        </button>
+                                        {selectedCompetition === comp && (
+                                            <button
+                                                onClick={() => toggleFavorite(comp)}
+                                                className={`p-2 rounded-xl transition-all ${isFav ? 'text-red-500 bg-red-500/10' : 'text-gray-400 bg-white/5'}`}
+                                            >
+                                                <Heart size={14} fill={isFav ? "currentColor" : "none"} />
+                                            </button>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
                     )}
                 </div>
