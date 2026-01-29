@@ -17,6 +17,7 @@ export default function Matches() {
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [autoRefresh, setAutoRefresh] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [selectedCompetition, setSelectedCompetition] = useState('all');
 
     // Fetch matches
     useEffect(() => {
@@ -149,7 +150,7 @@ export default function Matches() {
                     </div>
 
                     {/* Date Selector (only for finished matches) */}
-                    {activeTab === 'finished' && (
+                    {activeTab === 'finished' && !searchQuery && (
                         <div className="flex gap-2 overflow-x-auto scrollbar-hide mt-4 pb-2">
                             {dates.map((date) => {
                                 const isSelected = format(date, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd');
@@ -173,6 +174,33 @@ export default function Matches() {
                             })}
                         </div>
                     )}
+
+                    {/* Competition Filter (only when searching or multiple competitions present) */}
+                    {matches.length > 0 && (searchQuery || activeTab === 'live') && (
+                        <div className="flex gap-2 overflow-x-auto scrollbar-hide mt-4 pb-2">
+                            <button
+                                onClick={() => setSelectedCompetition('all')}
+                                className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all ${selectedCompetition === 'all'
+                                    ? 'bg-white text-charcoal'
+                                    : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/10'
+                                    }`}
+                            >
+                                Tous
+                            </button>
+                            {[...new Set(matches.map(m => m.league?.name || m.competition || 'Autres'))].map((comp) => (
+                                <button
+                                    key={comp}
+                                    onClick={() => setSelectedCompetition(comp)}
+                                    className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all ${selectedCompetition === comp
+                                        ? 'bg-gold text-charcoal'
+                                        : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/10'
+                                        }`}
+                                >
+                                    {comp}
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </header>
 
@@ -189,13 +217,15 @@ export default function Matches() {
                     </div>
                 ) : matches.length > 0 ? (
                     <div className="space-y-4">
-                        {matches.map((match) => (
-                            <MatchCard
-                                key={match._id}
-                                match={match}
-                                onClick={() => handleMatchClick(match._id)}
-                            />
-                        ))}
+                        {matches
+                            .filter(m => selectedCompetition === 'all' || (m.league?.name || m.competition || 'Autres') === selectedCompetition)
+                            .map((match) => (
+                                <MatchCard
+                                    key={match._id || match.id}
+                                    match={match}
+                                    onClick={() => handleMatchClick(match._id || match.id)}
+                                />
+                            ))}
                     </div>
                 ) : (
                     <div className="flex flex-col items-center justify-center py-20">
