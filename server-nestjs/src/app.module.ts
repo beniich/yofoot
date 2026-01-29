@@ -15,6 +15,7 @@ import { ShopModule } from './modules/shop/shop.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { BadgesModule } from './modules/badges/badges.module';
 import { LeaguesModule } from './modules/leagues/leagues.module';
+import { StandingsModule } from './modules/standings/standings.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { LeaguesModule } from './modules/leagues/leagues.module';
     OrdersModule,
     BadgesModule,
     LeaguesModule,
+    StandingsModule,
   ],
   controllers: [],
   providers: [],
