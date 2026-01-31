@@ -12,6 +12,16 @@
     @apply bg-charcoal text-white antialiased font-sans;
     font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
     font-size: 1rem;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
   }
 }
 

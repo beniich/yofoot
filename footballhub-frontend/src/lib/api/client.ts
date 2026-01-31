@@ -1,79 +1,157 @@
-import axios, { AxiosInstance, AxiosError } from 'axios'
-import { toast } from 'sonner'
+import axios, { AxiosError } from 'axios';
+import { toast } from 'sonner';
+import { getApiUrl } from '@/utils/platform';
+import { useAuthStore } from '@/store/authStore';
 
-// Create axios instance
-const apiClient: AxiosInstance = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
-    timeout: 10000,
+// Mode Démo : désactiver les appels backend
+const DEMO_MODE = true;
+
+// Données mockées pour le mode démo
+const MOCK_RESPONSES: Record<string, any> = {
+    '/api/auth/login': {
+        success: true,
+        message: 'Login successful',
+        token: 'demo-jwt-token-12345',
+        user: {
+            id: 'demo-user-1',
+            username: 'demo_user',
+            email: 'demo@footballhub.ma',
+            role: 'user',
+            avatar: null,
+            isActive: true,
+            preferences: {
+                theme: 'system',
+                language: 'fr',
+                notifications: {
+                    matchStart: true,
+                    matchResult: true,
+                    goals: true,
+                },
+            },
+        },
+    },
+    '/api/auth/register': {
+        success: true,
+        message: 'Registration successful',
+        token: 'demo-jwt-token-12345',
+        user: {
+            id: 'demo-user-new',
+            username: 'nouveau_user',
+            email: 'nouveau@footballhub.ma',
+            role: 'user',
+            isActive: true,
+        },
+    },
+    '/api/auth/me': {
+        success: true,
+        user: {
+            id: 'demo-user-1',
+            username: 'demo_user',
+            email: 'demo@footballhub.ma',
+            role: 'user',
+            isActive: true,
+        },
+    },
+};
+
+const apiClient = axios.create({
+    baseURL: DEMO_MODE ? '' : getApiUrl(),
     headers: {
         'Content-Type': 'application/json',
     },
-})
+    withCredentials: false,
+});
 
-// Request interceptor
+// Intercepteur de requêtes
 apiClient.interceptors.request.use(
-    (config) => {
-        // Get token from localStorage
-        if (typeof window !== 'undefined') {
-            const token = localStorage.getItem('accessToken')
-            if (token) {
-                config.headers.Authorization = `Bearer ${token}`
-            }
+    async (config) => {
+        // Mode Démo : intercepter et mocker
+        if (DEMO_MODE) {
+            console.log('🚀 MODE DEMO: Requête mockée', config.url);
+            return config;
         }
-        return config
-    },
-    (error) => {
-        return Promise.reject(error)
-    }
-)
 
-// Response interceptor
+        const { accessToken } = useAuthStore.getState();
+        if (accessToken && config.headers) {
+            config.headers.Authorization = `Bearer ${accessToken}`;
+        }
+        return config;
+    },
+    (error) => Promise.reject(error)
+);
+
+// Intercepteur de réponses
 apiClient.interceptors.response.use(
     (response) => {
-        return response
+        // Mode Démo : retourner des données mockées
+        if (DEMO_MODE && response.config.url) {
+            const mockData = MOCK_RESPONSES[response.config.url];
+            if (mockData) {
+                console.log('✅ MODE DEMO: Réponse mockée', mockData);
+                return {
+                    ...response,
+                    data: mockData,
+                };
+            }
+        }
+        return response;
     },
     async (error: AxiosError) => {
-        const originalRequest = error.config as any
+        // Mode Démo : toujours réussir
+        if (DEMO_MODE) {
+            const mockData = MOCK_RESPONSES[error.config?.url || ''] || { success: true };
+            console.log('✅ MODE DEMO: Erreur ignorée, réponse mockée', mockData);
+            return Promise.resolve({
+                data: mockData,
+                status: 200,
+                statusText: 'OK',
+                headers: {},
+                config: error.config!,
+            });
+        }
 
-        // Handle 401 Unauthorized
-        if (error.response?.status === 401 && !originalRequest._retry) {
-            originalRequest._retry = true
+        const originalRequest = error.config;
 
-            try {
-                // Try to refresh token
-                const refreshToken = localStorage.getItem('refreshToken')
-                if (refreshToken) {
-                    const response = await axios.post(
-                        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/refresh`,
-                        { refreshToken }
-                    )
+        // Gestion du refresh token
+        if (error.response?.status === 401 && originalRequest) {
+            const { refreshToken, setTokens, logout } = useAuthStore.getState();
 
-                    const { accessToken } = response.data
-                    localStorage.setItem('accessToken', accessToken)
+            if (refreshToken) {
+                try {
+                    const response = await axios.post(`${getApiUrl()}/api/auth/refresh`, {
+                        refreshToken,
+                    });
 
-                    // Retry original request
-                    originalRequest.headers.Authorization = `Bearer ${accessToken}`
-                    return apiClient(originalRequest)
+                    const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
+                        response.data;
+
+                    setTokens(newAccessToken, newRefreshToken);
+
+                    if (originalRequest.headers) {
+                        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+                    }
+
+                    return apiClient(originalRequest);
+                } catch (refreshError) {
+                    logout();
+                    toast.error('Session expirée. Veuillez vous reconnecter.');
+                    return Promise.reject(refreshError);
                 }
-            } catch (refreshError) {
-                // Refresh failed, logout user
-                localStorage.removeItem('accessToken')
-                localStorage.removeItem('refreshToken')
-                window.location.href = '/auth/login'
-                return Promise.reject(refreshError)
             }
         }
 
-        // Handle other errors
-        const errorMessage =
-            (error.response?.data as any)?.message ||
+        // Afficher les erreurs
+        const message =
+            error.response?.data?.message ||
             error.message ||
-            'Une erreur est survenue'
+            'Une erreur est survenue';
 
-        toast.error(errorMessage)
+        if (error.response?.status !== 401) {
+            toast.error(message);
+        }
 
-        return Promise.reject(error)
+        return Promise.reject(error);
     }
-)
+);
 
-export default apiClient
+export default apiClient;

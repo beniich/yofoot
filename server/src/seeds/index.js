@@ -4,244 +4,274 @@ import Member from '../models/Member.js';
 import Event from '../models/Event.js';
 import Product from '../models/Product.js';
 import Ticket from '../models/Ticket.js';
-import Order from '../models/Order.js';
-import League from '../models/League.js';
-import Team from '../models/Team.js';
-import Match from '../models/Match.js';
-import NewsArticle from '../models/NewsArticle.js';
-import Standing from '../models/Standing.js';
+import User from '../models/User.js';
 
 const seedDatabase = async () => {
     try {
-        await mongoose.connect(process.env.MONGODB_URI);
-        console.log('Connected to MongoDB for seeding...');
+        console.log('🌱 Starting database seeding...');
 
-        // Clear existing data
-        await Member.deleteMany({});
-        await Event.deleteMany({});
-        await Product.deleteMany({});
-        await Ticket.deleteMany({});
-        await Order.deleteMany({});
-        await League.deleteMany({});
-        await Team.deleteMany({});
-        await Match.deleteMany({});
-        await NewsArticle.deleteMany({});
-        await Standing.deleteMany({});
-
-        console.log('Cleared existing data.');
-
-        // 1. Create Members
-        const members = await Member.insertMany([
-            {
-                firstName: 'John',
-                lastName: 'Doe',
-                email: 'john@example.com',
-                phone: '123-456-7890',
-                role: 'Fan',
-                tier: 'VIP',
-                status: 'Active',
-                avatar: 'https://i.pravatar.cc/150?u=john'
-            },
-            {
-                firstName: 'Jane',
-                lastName: 'Smith',
-                email: 'jane@example.com',
-                phone: '098-765-4321',
-                role: 'Player',
-                tier: 'Elite',
-                status: 'Active',
-                avatar: 'https://i.pravatar.cc/150?u=jane'
-            }
-        ]);
-        console.log(`Created ${members.length} members.`);
-
-        // 2. Create Products
-        const products = await Product.insertMany([
-            {
-                name: '23/24 Home Jersey',
-                description: 'Official club home jersey for the 2023/24 season.',
-                category: 'Jersey',
-                price: 85,
-                comparePrice: 100,
-                mainImage: 'https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=500&q=80',
-                stock: 50,
-                isFeatured: true,
-                rating: 4.8,
-                salesCount: 124
-            },
-            {
-                name: 'Pro Training Top',
-                description: 'Breathable training top used by the first team.',
-                category: 'Training',
-                price: 55,
-                mainImage: 'https://images.unsplash.com/photo-1556906781-9a412961c28c?w=500&q=80',
-                stock: 30,
-                isFeatured: true,
-                rating: 4.6,
-                salesCount: 89
-            }
-        ]);
-        console.log(`Created ${products.length} products.`);
-
-        // 3. Create Events
-        const events = await Event.insertMany([
-            {
-                title: 'FC Lions vs. Tigers',
-                description: 'The big derby match of the season.',
-                category: 'Match',
-                startDate: new Date('2024-10-12T19:00:00'),
-                venue: 'Main Stadium',
-                coverImage: 'https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=800&q=80',
-                capacity: 50000,
-                ticketPrice: 45,
-                status: 'Published'
-            },
-            {
-                title: 'Youth Tournament',
-                description: 'Annual youth academy tournament.',
-                category: 'Tournament',
-                startDate: new Date('2024-11-20T10:00:00'),
-                venue: 'Training Complex',
-                coverImage: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800&q=80',
-                capacity: 500,
-                ticketPrice: 15,
-                status: 'Published'
-            }
-        ]);
-        console.log(`Created ${events.length} events.`);
-
-        // 4. Create Tickets for first member
-        await Ticket.create({
-            event: events[0]._id,
-            member: members[0]._id,
-            ticketType: 'VIP',
-            price: events[0].ticketPrice * 2,
-            seating: { section: 'A', row: '12', seat: '45' },
-            status: 'Valid'
+        // Connect to MongoDB
+        await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/footballhub', {
+            // options not needed for Mongoose 6+ typically, but keeping safe defaults if needed, 
+            // although 'useNewUrlParser' is deprecated in newer drivers, it's safer to remove if unsure.
+            // Keeping it simple as Mongoose 8 simplifies connection
         });
 
-        console.log('Created sample tickets.');
+        console.log('✅ Connected to MongoDB');
 
-        // 5. Create Leagues
-        const leagues = await League.insertMany([
-            {
-                apiFootballId: 39,
-                name: 'Premier League',
-                type: 'League',
-                logo: 'https://media.api-sports.io/football/leagues/39.png',
-                country: { name: 'England', code: 'GB', flag: 'https://media.api-sports.io/flags/gb.svg' },
-                isFeatured: true,
-                priority: 10,
-                followersCount: 15420
-            },
-            {
-                apiFootballId: 140,
-                name: 'La Liga',
-                type: 'League',
-                logo: 'https://media.api-sports.io/football/leagues/140.png',
-                country: { name: 'Spain', code: 'ES', flag: 'https://media.api-sports.io/flags/es.svg' },
-                isFeatured: true,
-                priority: 9,
-                followersCount: 12300
-            },
-            {
-                apiFootballId: 61,
-                name: 'Ligue 1',
-                type: 'League',
-                logo: 'https://media.api-sports.io/football/leagues/61.png',
-                country: { name: 'France', code: 'FR', flag: 'https://media.api-sports.io/flags/fr.svg' },
-                isFeatured: true,
-                priority: 8,
-                followersCount: 8500
+        // Clear existing data (drop collections to reset indexes)
+        console.log('🗑️  Clearing existing data...');
+        const collections = await mongoose.connection.db.listCollections().toArray();
+        const collectionNames = collections.map(c => c.name);
+
+        for (const name of ['members', 'events', 'products', 'tickets', 'users']) {
+            if (collectionNames.includes(name)) {
+                await mongoose.connection.db.dropCollection(name);
+                console.log(`   Dropped ${name}`);
             }
-        ]);
-        console.log(`Created ${leagues.length} leagues.`);
+        }
 
-        // 6. Create Teams
-        const teams = await Team.insertMany([
-            {
-                apiFootballId: 42,
-                name: 'Arsenal',
-                logo: 'https://media.api-sports.io/football/teams/42.png',
-                country: 'England'
-            },
-            {
-                apiFootballId: 50,
-                name: 'Man City',
-                logo: 'https://media.api-sports.io/football/teams/50.png',
-                country: 'England'
-            },
-            {
-                apiFootballId: 541,
-                name: 'Real Madrid',
-                logo: 'https://media.api-sports.io/football/teams/541.png',
-                country: 'Spain'
-            }
-        ]);
-        console.log(`Created ${teams.length} teams.`);
+        // ============================================================
+        // CREATE ADMIN USER
+        // ============================================================
 
-        // 7. Create Matches
-        await Match.insertMany([
-            {
-                apiFootballId: 1035041,
-                league: leagues[0]._id,
-                season: 2023,
-                homeTeam: { team: teams[0]._id, name: teams[0].name, logo: teams[0].logo },
-                awayTeam: { team: teams[1]._id, name: teams[1].name, logo: teams[1].logo },
-                matchDate: new Date(),
-                status: 'LIVE',
-                elapsed: 65,
-                score: { fulltime: { home: 1, away: 1 } }
-            },
-            {
-                apiFootballId: 1035042,
-                league: leagues[0]._id,
-                season: 2023,
-                homeTeam: { team: teams[2]._id, name: teams[2].name, logo: teams[2].logo },
-                awayTeam: { team: teams[1]._id, name: teams[1].name, logo: teams[1].logo },
-                matchDate: new Date(Date.now() + 86400000),
-                status: 'SCHEDULED',
-            }
-        ]);
-        console.log('Created sample matches.');
+        const adminUser = await User.create({
+            username: 'admin',
+            email: 'admin@footballhub.ma',
+            password: 'admin123',
+            firstName: 'Admin',
+            lastName: 'FootballHub',
+            role: 'admin',
+            country: 'Morocco',
+            city: 'Casablanca',
+            isEmailVerified: true,
+        });
 
-        // 8. Create News
-        await NewsArticle.insertMany([
+        console.log('✅ Admin user created');
+
+        // ============================================================
+        // CREATE MEMBERS (Moroccan Names)
+        // ============================================================
+
+        const members = await Member.create([
             {
-                title: 'Kylian Mbappé rejoint le Real Madrid',
-                description: 'C\'est officiel, le prodige français s\'engage pour 5 saisons avec la Casa Blanca.',
-                content: 'L\'annonce tant attendue est enfin tombée...',
-                category: 'Transfer',
-                image: 'https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=1000&q=80',
-                publishedAt: new Date(),
-                viewCount: 15400,
-                likeCount: 2300,
-                isFeatured: true,
-                source: 'FootballHub',
-                league: leagues[1]._id
+                membershipNumber: 'MEM000001',
+                firstName: 'Youssef',
+                lastName: 'Benali',
+                email: 'youssef.benali@email.ma',
+                phone: '+212 6 12 34 56 78',
+                role: 'Player',
+                tier: 'VIP',
+                status: 'Active',
+                city: 'Casablanca',
+                country: 'Morocco',
+                dateOfBirth: new Date('1995-03-15'),
             },
             {
-                title: 'Premier League : Arsenal en tête de la course',
-                description: 'Les Gunners conservent leur avance après une victoire cruciale.',
-                content: 'Les hommes de Mikel Arteta ont montré une solidité impressionnante...',
+                membershipNumber: 'MEM000002',
+                firstName: 'Fatima',
+                lastName: 'Zahra',
+                email: 'fatima.zahra@email.ma',
+                phone: '+212 6 98 76 54 32',
+                role: 'Fan',
+                tier: 'Elite',
+                status: 'Active',
+                city: 'Rabat',
+                country: 'Morocco',
+                dateOfBirth: new Date('1998-07-22'),
+            },
+            {
+                membershipNumber: 'MEM000003',
+                firstName: 'Mohamed',
+                lastName: 'Alami',
+                email: 'mohamed.alami@email.ma',
+                phone: '+212 6 55 44 33 22',
+                role: 'Staff',
+                tier: 'Standard',
+                status: 'Active',
+                city: 'Marrakech',
+                country: 'Morocco',
+                dateOfBirth: new Date('1990-11-08'),
+            },
+        ]);
+
+        console.log(`✅ Created ${members.length} members`);
+
+        // ============================================================
+        // CREATE EVENTS
+        // ============================================================
+
+        const events = await Event.create([
+            {
+                title: 'Match Raja vs Wydad - Derby Casablancais',
+                description: 'Le grand derby de Casablanca au Stade Mohammed V',
                 category: 'Match',
-                image: 'https://images.unsplash.com/photo-1551958219-acbc608c6377?w=1000&q=80',
-                publishedAt: new Date(Date.now() - 7200000),
-                viewCount: 8900,
-                likeCount: 1200,
+                startDate: new Date('2024-12-15T20:00:00'),
+                venue: 'Stade Mohammed V',
+                address: {
+                    city: 'Casablanca',
+                    country: 'Morocco',
+                },
+                capacity: 50000,
+                ticketPrice: 150,
+                status: 'Published',
                 isFeatured: true,
-                source: 'Evening Standard',
-                league: leagues[0]._id
-            }
+                organizer: adminUser._id,
+                tags: ['Derby', 'Botola', 'Raja', 'Wydad'],
+            },
+            {
+                title: 'Tournoi de Football Junior',
+                description: 'Tournoi pour les jeunes de 12-16 ans',
+                category: 'Tournament',
+                startDate: new Date('2024-12-20T14:00:00'),
+                endDate: new Date('2024-12-22T18:00:00'),
+                venue: 'Complexe Sportif Moulay Abdallah',
+                address: {
+                    city: 'Rabat',
+                    country: 'Morocco',
+                },
+                capacity: 200,
+                ticketPrice: 50,
+                status: 'Published',
+                organizer: adminUser._id,
+                tags: ['Junior', 'Formation', 'Tournoi'],
+            },
         ]);
-        console.log('Created sample news articles.');
 
-        console.log('Database seeded successfully! 🌱');
+        console.log(`✅ Created ${events.length} events`);
+
+        // ============================================================
+        // CREATE PRODUCTS (Moroccan Teams)
+        // ============================================================
+
+        const products = await Product.create([
+            {
+                name: 'Maillot Raja Casablanca 2024/25 - Domicile',
+                description: 'Maillot officiel du Raja Athletic Club saison 2024/25',
+                category: 'Jersey',
+                price: 450,
+                comparePrice: 550,
+                stock: 100,
+                images: ['/images/products/raja-home-jersey.jpg'],
+                sizes: [
+                    { size: 'S', stock: 20 },
+                    { size: 'M', stock: 30 },
+                    { size: 'L', stock: 30 },
+                    { size: 'XL', stock: 20 },
+                ],
+                colors: ['Vert', 'Blanc'],
+                isFeatured: true,
+                isActive: true,
+                rating: 4.8,
+                reviewCount: 156,
+                tags: ['Raja', 'Maillot', 'Officiel'],
+            },
+            {
+                name: 'Écharpe Wydad Athletic Club',
+                description: 'Écharpe officielle WAC avec logo brodé',
+                category: 'Accessories',
+                price: 120,
+                stock: 200,
+                images: ['/images/products/wydad-scarf.jpg'],
+                colors: ['Rouge', 'Blanc'],
+                isFeatured: true,
+                isActive: true,
+                rating: 4.5,
+                reviewCount: 89,
+                tags: ['Wydad', 'Écharpe', 'Accessoire'],
+            },
+            {
+                name: 'Ballon de Football Professionnel',
+                description: 'Ballon utilisé en Botola Pro',
+                category: 'Equipment',
+                price: 350,
+                stock: 50,
+                images: ['/images/products/professional-ball.jpg'],
+                isFeatured: false,
+                isActive: true,
+                rating: 4.9,
+                reviewCount: 234,
+                tags: ['Ballon', 'Botola', 'Professionnel'],
+            },
+            {
+                name: 'Casquette Équipe Nationale Marocaine',
+                description: 'Casquette officielle des Lions de l\'Atlas',
+                category: 'Accessories',
+                price: 180,
+                stock: 150,
+                images: ['/images/products/morocco-cap.jpg'],
+                colors: ['Rouge', 'Vert'],
+                isFeatured: true,
+                isActive: true,
+                rating: 4.7,
+                reviewCount: 112,
+                tags: ['Maroc', 'Lions', 'Casquette'],
+            },
+        ]);
+
+        console.log(`✅ Created ${products.length} products`);
+
+        // ============================================================
+        // CREATE TICKETS
+        // ============================================================
+
+        const tickets = [];
+        for (let i = 0; i < 10; i++) {
+            const ticketNumber = `TKT-${Date.now().toString(36).toUpperCase()}-${i.toString().padStart(4, '0')}`;
+            const qrData = {
+                ticket: ticketNumber,
+                event: events[0]._id.toString(),
+                member: members[i % members.length]._id.toString(),
+                timestamp: Date.now(),
+            };
+            const qrCode = Buffer.from(JSON.stringify(qrData)).toString('base64');
+
+            const ticket = await Ticket.create({
+                ticketNumber,
+                qrCode,
+                event: events[0]._id,
+                member: members[i % members.length]._id,
+                ticketType: i % 3 === 0 ? 'VIP' : 'Standard',
+                price: i % 3 === 0 ? 300 : 150,
+                seating: {
+                    section: `Section ${String.fromCharCode(65 + (i % 4))}`,
+                    row: `${Math.floor(i / 4) + 1}`,
+                    seat: `${(i % 10) + 1}`,
+                },
+                status: 'Valid',
+            });
+
+            tickets.push(ticket);
+
+            // Update member
+            await Member.findByIdAndUpdate(members[i % members.length]._id, {
+                $push: { tickets: ticket._id },
+                $inc: { totalSpent: ticket.price },
+            });
+        }
+
+        console.log(`✅ Created ${tickets.length} tickets`);
+
+        // ============================================================
+        // SUMMARY
+        // ============================================================
+
+        console.log('\n🎉 =====================================');
+        console.log('   Database Seeded Successfully!');
+        console.log('   =====================================');
+        console.log(`   Admin User: admin@footballhub.ma / admin123`);
+        console.log(`   Members: ${members.length}`);
+        console.log(`   Events: ${events.length}`);
+        console.log(`   Products: ${products.length}`);
+        console.log(`   Tickets: ${tickets.length}`);
+        console.log('   =====================================\n');
+
         process.exit(0);
     } catch (error) {
-        console.error('Error seeding database:', error);
+        console.error('❌ Seeding error:', error);
         process.exit(1);
     }
 };
 
+// Run seeding
 seedDatabase();

@@ -9,6 +9,7 @@ import http from 'http';
 import cronJobs from './jobs/cronJobs.js';
 import syncService from './services/syncService.js';
 import websocketService from './services/websocketService.js';
+import notificationService from './services/notificationService.js';
 
 // Load routes
 import memberRoutes from './routes/members.js';
@@ -32,7 +33,7 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || '*'
+  origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : '*'
 }));
 app.use(morgan('dev'));
 app.use(express.json());
@@ -73,6 +74,7 @@ mongoose.connect(process.env.MONGODB_URI)
     console.log('✅ Connected to MongoDB');
 
     // Initialize services
+    notificationService.initialize();
     websocketService.initialize(server);
     cronJobs.initializeJobs();
 

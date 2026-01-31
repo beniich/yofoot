@@ -1,11 +1,14 @@
-import cron from 'node-cron';
-import syncService from '../services/syncService.js';
-import Match from '../models/Match.js';
+const cron = require('node-cron');
+const syncService = require('../services/syncService');
 
 class CronJobs {
     constructor() {
         this.jobs = [];
     }
+
+    // ============================================================
+    // INITIALIZE ALL CRON JOBS
+    // ============================================================
 
     initializeJobs() {
         console.log('⏰ Initializing CRON jobs...');
@@ -29,6 +32,7 @@ class CronJobs {
             cron.schedule('*/15 * * * *', async () => {
                 try {
                     console.log('🔄 Updating upcoming matches...');
+                    // Sync matches for the next 7 days
                     await syncService.syncFeaturedMatches();
                 } catch (error) {
                     console.error('Upcoming matches CRON error:', error);
@@ -87,7 +91,14 @@ class CronJobs {
         console.log(`✅ ${this.jobs.length} CRON jobs initialized`);
     }
 
+    // ============================================================
+    // CLEANUP FUNCTIONS
+    // ============================================================
+
     async cleanupOldMatches() {
+        const Match = require('../models/Match');
+
+        // Delete matches older than 90 days
         const ninetyDaysAgo = new Date();
         ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
 
@@ -99,11 +110,19 @@ class CronJobs {
         console.log(`🗑️  Deleted ${result.deletedCount} old matches`);
     }
 
+    // ============================================================
+    // STOP ALL JOBS
+    // ============================================================
+
     stopAllJobs() {
         console.log('⏸️  Stopping all CRON jobs...');
         this.jobs.forEach((job) => job.stop());
         console.log('✅ All CRON jobs stopped');
     }
+
+    // ============================================================
+    // GET JOBS STATUS
+    // ============================================================
 
     getJobsStatus() {
         return {
@@ -120,4 +139,6 @@ class CronJobs {
     }
 }
 
-export default new CronJobs();
+// Singleton
+const cronJobs = new CronJobs();
+module.exports = cronJobs;

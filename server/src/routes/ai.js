@@ -1,15 +1,19 @@
 import express from 'express';
 import axios from 'axios';
 import { protect } from '../middleware/auth.js';
+import predictionService from '../services/predictionService.js';
 
 const router = express.Router();
 
 // @route   POST /api/ai/predict
 // @desc    Get AI prediction for a match
 // @access  Private (Pro/Elite users)
+// @route   POST /api/ai/predict
+// @desc    Get AI prediction for a match
+// @access  Private (Pro/Elite users)
 router.post('/predict', protect, async (req, res) => {
     try {
-        const { matchId, homeTeam, awayTeam, league } = req.body;
+        const { matchId } = req.body;
 
         // Check user plan
         if (!req.user.hasAccess('advanced_predictions')) {
@@ -19,45 +23,29 @@ router.post('/predict', protect, async (req, res) => {
             });
         }
 
-        // Call AI service
-        const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://localhost:8000';
-
         try {
-            const response = await axios.post(`${aiServiceUrl}/predict`, {
-                match_id: matchId,
-                home_team: homeTeam,
-                away_team: awayTeam,
-                league
-            }, {
-                timeout: 5000
-            });
+            // Use local Prediction Service
+            const prediction = await predictionService.predictMatch(matchId);
 
             res.json({
                 success: true,
-                prediction: response.data
+                prediction
             });
 
-        } catch (aiError) {
-            console.error('AI Service error:', aiError.message);
-
-            // Fallback: return mock prediction if AI service is down
-            res.json({
-                success: true,
-                prediction: {
-                    winner: 'home',
-                    confidence: 0.65,
-                    score_prediction: '2-1',
-                    note: 'AI service unavailable - showing fallback prediction'
-                }
+        } catch (serviceError) {
+            console.error('Prediction Service error:', serviceError.message);
+            res.status(500).json({
+                success: false,
+                message: 'Error generating prediction',
+                error: serviceError.message
             });
         }
 
     } catch (error) {
-        console.error('Prediction error:', error);
+        console.error('Prediction route error:', error);
         res.status(500).json({
             success: false,
-            message: 'Server error',
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            message: 'Server error'
         });
     }
 });

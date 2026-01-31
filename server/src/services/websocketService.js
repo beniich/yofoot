@@ -1,5 +1,5 @@
-import { WebSocketServer } from 'ws';
-import Match from '../models/Match.js';
+const WebSocket = require('ws');
+const Match = require('../models/Match');
 
 class WebSocketService {
     constructor() {
@@ -8,12 +8,12 @@ class WebSocketService {
     }
 
     initialize(server) {
-        this.wss = new WebSocketServer({
+        this.wss = new WebSocket.Server({
             server,
             path: '/ws',
         });
 
-        this.wss.on('connection', (ws) => {
+        this.wss.on('connection', (ws, req) => {
             const clientId = this.generateClientId();
 
             console.log(`✅ WebSocket client connected: ${clientId}`);
@@ -41,6 +41,7 @@ class WebSocketService {
                 console.error('WebSocket error:', error);
             });
 
+            // Send welcome message
             this.sendToClient(clientId, {
                 type: 'connected',
                 clientId,
@@ -48,6 +49,7 @@ class WebSocketService {
             });
         });
 
+        // Start broadcasting live scores
         this.startLiveBroadcast();
 
         console.log('✅ WebSocket server initialized');
@@ -106,7 +108,7 @@ class WebSocketService {
 
     sendToClient(clientId, data) {
         const client = this.clients.get(clientId);
-        if (!client || client.ws.readyState !== 1) return; // 1 = WebSocket.OPEN
+        if (!client || client.ws.readyState !== WebSocket.OPEN) return;
 
         try {
             client.ws.send(JSON.stringify(data));
@@ -134,6 +136,7 @@ class WebSocketService {
     }
 
     async startLiveBroadcast() {
+        // Broadcast live scores every 10 seconds
         setInterval(async () => {
             try {
                 const liveMatches = await Match.find({ status: 'LIVE' })
@@ -141,7 +144,8 @@ class WebSocketService {
                     .select('homeTeam awayTeam score elapsed status league');
 
                 if (liveMatches.length > 0) {
-                    this.broadcast('live-scores', liveMatches);
+                    const count = this.broadcast('live-scores', liveMatches);
+                    console.log(`📡 Broadcasted live scores to ${count} clients`);
                 }
             } catch (error) {
                 console.error('Live broadcast error:', error);
@@ -171,4 +175,6 @@ class WebSocketService {
     }
 }
 
-export default new WebSocketService();
+// Singleton
+const websocketService = new WebSocketService();
+export default websocketService;
